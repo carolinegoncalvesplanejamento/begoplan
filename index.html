@@ -417,7 +417,7 @@ body:not(.light-theme) .btn-cta{background:#fff; color:#000;}
 
 /* responsivo */
 @media (max-width:860px){
-  body{flex-direction:column;}
+  .layout{flex-direction:column;}
   .sidebar{width:100%; border-right:none; border-bottom:1px solid var(--border);}
   main{padding:32px 24px;}
   .split{grid-template-columns:1fr;}
@@ -1402,7 +1402,7 @@ const CALENDAR_URL   = 'https://calendar.app.google/oznsdSDAwFGqdQua7';
 
 // Google Sheets via Apps Script — cole a URL gerada pelo Apps Script
 // Deixe vazio ('') para não enviar (só testa localmente)
-const SHEETS_URL = '';
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbztGctMvujUfG0p2pz8PomLuc6JdcdQIS2KVsSou7BxqHssjDoY8cP_9SG75caS9R82tQ/exec';
 
 /* ============================================================
    Envio de lead para Google Sheets
