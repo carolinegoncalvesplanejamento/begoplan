@@ -1,0 +1,3956 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3C — Simulador de Crédito</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #1a1a1a;
+  --surface:  #222222;
+  --border:   #333333;
+  --primary:  #2C2D0B;
+  --sec:      #C9A84C;
+  --gold:     #ECC882;
+  --tp:       #F9F9F9;
+  --ts:       #9CA3AF;
+  --ton:      #0C0E18;
+  --err:      #F05252;
+  --succ:     #34C77B;
+  --cons:     #6ba7e8;
+  --sec-bg:   rgba(201,168,76,.08);
+  --succ-bg:  rgba(52,199,123,.08);
+  --err-bg:   rgba(240,82,82,.08);
+  --gold-bg:  rgba(236,200,130,.06);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tp);font-family:'Inter',sans-serif;font-size:16px;line-height:1.6;min-height:100vh}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* ── HEADER ── */
+header{
+  position:sticky;top:0;z-index:200;
+  background:rgba(12,14,24,.95);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  height:60px;padding:0 32px;
+  display:flex;align-items:center;gap:16px;
+}
+.logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--tp)}
+.logo span{color:var(--sec)}
+.lsep{width:1px;height:22px;background:var(--border)}
+.lsub{font-size:13px;color:var(--ts);letter-spacing:.1em;text-transform:uppercase}
+.spacer{flex:1}
+.hbadge{font-size:12px;color:var(--ts);border:1px solid var(--border);padding:3px 10px;border-radius:4px;font-family:'Inter',monospace}
+.links-page-grid{display:flex;flex-direction:column;gap:12px;max-width:560px}
+.lp-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid var(--border);text-decoration:none;transition:background .15s}
+.lp-item:hover{background:rgba(255,255,255,.07)}
+.lp-icon{font-size:22px;width:28px;text-align:center;flex-shrink:0}
+.lp-info{flex:1}
+.lp-title{font-size:15px;font-weight:600;color:var(--tp)}
+.lp-desc{font-size:13px;color:var(--ts);margin-top:3px}
+.lp-arrow{font-size:15px;color:var(--ts)}
+
+/* ── LAYOUT ── */
+.shell{display:flex;min-height:100vh}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:210px;flex-shrink:0;
+  border-right:1px solid var(--border);
+  padding:20px 0;
+  position:sticky;top:60px;
+  height:calc(100vh - 60px);
+  overflow-y:auto;
+}
+.ns{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ts);padding:0 16px;margin:18px 0 6px}
+.ns:first-child{margin-top:0}
+.ns-desc{font-size:11px;color:var(--ts);padding:0 16px;margin:-4px 0 8px;opacity:.7}
+.vf-hd{display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:15px;font-weight:600;user-select:none}
+.vf-arr{font-size:13px;color:var(--ts);transition:transform .2s}
+.vf-sec.closed .vf-body{display:none}
+.vf-sec:not(.closed) .vf-arr{transform:rotate(90deg)}
+.ni{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 16px;font-size:15px;color:var(--ts);
+  cursor:pointer;transition:all .15s;
+  border-left:2px solid transparent;user-select:none;
+}
+.ni:hover{color:var(--tp);background:rgba(255,255,255,.03)}
+.ni.active{color:var(--sec);border-left-color:var(--sec);background:var(--sec-bg)}
+.nd{width:6px;height:6px;border-radius:50%;background:var(--border);flex-shrink:0;transition:background .15s}
+.ni.active .nd{background:var(--sec)}
+.ni-badge{font-size:11px;margin-left:auto;padding:2px 6px;border-radius:3px;background:var(--border);color:var(--ts)}
+.ni-soon{opacity:.45;cursor:default;pointer-events:none}
+.ns-toggle{cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
+.ns-arr{font-size:11px;transition:transform .2s}
+.ns-toggle:not(.collapsed) .ns-arr{transform:rotate(90deg)}
+.ns-toggle.collapsed+.ns-group{display:none}
+
+/* ── MAIN ── */
+.main{flex:1;padding:32px;min-width:0}
+.page{display:none}
+.page.active{display:block;animation:fu .3s ease}
+@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── PAGE TITLE ── */
+.pt{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px}
+.ps{font-size:15px;color:var(--ts);margin-top:0;margin-bottom:16px}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px}
+.ct{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ts);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.ct::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── RATE STRIP ── */
+.rstrip{
+  display:flex;gap:14px;flex-wrap:wrap;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:14px 16px;margin-bottom:18px;
+  align-items:flex-end;
+}
+.rc{display:flex;flex-direction:column;gap:4px}
+.rc label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ts)}
+.rrow{display:flex;align-items:center;gap:8px}
+.rc input{
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  border-radius:6px;padding:7px 8px;width:58px;
+  color:var(--tp);font-family:'Inter',monospace;font-size:14px;outline:none;
+  transition:border-color .15s;
+}
+.rc input:focus{border-color:var(--sec)}
+.rm{font-size:12px;color:var(--ts);font-family:monospace;white-space:nowrap}
+.api-badge{font-size:11px;color:var(--sec);background:var(--sec-bg);border:1px solid rgba(201,168,76,.2);padding:2px 6px;border-radius:3px;cursor:pointer;white-space:nowrap}
+
+/* ── FORM GRID ── */
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.fg4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.f{display:flex;flex-direction:column;gap:5px}
+.f label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ts);font-weight:600}
+.f input,.f select{
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  border-radius:8px;padding:10px 12px;color:var(--tp);
+  font-family:'Inter',sans-serif;font-size:15px;
+  outline:none;transition:border-color .15s;width:100%;
+}
+.f input:focus,.f select:focus{border-color:var(--sec)}
+.f select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%239CA3AF' d='M5 7L0 2h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;
+  padding-right:28px;cursor:pointer;appearance:none;
+}
+.f select option{background:#1e2030;color:var(--tp)}
+.hint{font-size:12px;color:var(--ts);margin-top:2px;opacity:.8}
+.rate-note{font-size:12px;color:var(--ts);font-style:italic;margin-top:4px}
+
+/* ── TOGGLE ── */
+.toggle-row{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.toggle-label{font-size:13px;color:var(--ts)}
+.toggle-group{display:flex;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:7px;padding:3px;gap:3px}
+.tg-btn{padding:5px 14px;border-radius:5px;border:none;background:transparent;color:var(--ts);font-size:14px;font-family:'Inter',sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tg-btn.active{background:var(--sec);color:var(--ton);font-weight:600}
+.tg-btn:hover:not(.active){color:var(--tp);background:rgba(255,255,255,.06)}
+
+/* ── INFO STRIP ── */
+.istrip{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.15);
+  border-radius:8px;padding:10px 14px;margin-bottom:16px;
+  font-size:14px;color:var(--ts);
+}
+.istrip b{color:var(--gold)}
+.istrip .note{font-size:12px;color:var(--ts);opacity:.7;margin-top:2px;width:100%}
+
+/* ── BTN ── */
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:11px 24px;border-radius:8px;border:none;
+  font-family:'Syne',sans-serif;font-size:15px;font-weight:700;
+  cursor:pointer;transition:all .2s;letter-spacing:.02em;
+}
+.btn-sec{background:var(--sec);color:var(--ton)}
+.btn-sec:hover{background:var(--gold);transform:translateY(-1px);box-shadow:0 8px 24px rgba(201,168,76,.25)}
+.btn-ghost{background:transparent;color:var(--ts);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--sec);color:var(--sec)}
+
+/* ── RESULTS ── */
+.ra{margin-top:28px;display:none}
+.ra.show{display:block;animation:fu .35s ease}
+
+/* ── SUMMARY CHIPS ── */
+.srow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.chip{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:18px;
+  position:relative;overflow:hidden;
+  transition:transform .2s,border-color .2s;
+}
+.chip:hover{transform:translateY(-2px)}
+.chip.win{border-color:var(--succ)}
+.chip.win::after{
+  content:'MENOR CUSTO';position:absolute;top:10px;right:10px;
+  font-size:10px;letter-spacing:.12em;font-weight:700;
+  color:var(--succ);background:var(--succ-bg);
+  padding:2px 7px;border-radius:3px;
+}
+.chip-accent{width:24px;height:3px;border-radius:2px;margin-bottom:10px}
+.chip-name{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:2px}
+.chip-mod{font-size:12px;color:var(--ts);margin-bottom:12px}
+.chip-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.chip-row .lb{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ts)}
+.chip-row .vl{font-size:15px;font-weight:600;font-family:monospace}
+.chip-total{font-size:20px;font-weight:700;font-family:monospace;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+
+/* ── BAR CHART ── */
+.barchart{margin:0 0 20px}
+.brow{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.blabel{width:130px;font-size:13px;color:var(--ts);text-align:right;flex-shrink:0}
+.btrack{flex:1;height:22px;background:rgba(255,255,255,.04);border-radius:4px;overflow:hidden;border:1px solid var(--border)}
+.bfill{height:100%;border-radius:3px;display:flex;align-items:center;padding-left:10px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;transition:width 1.4s cubic-bezier(.23,1,.32,1)}
+
+/* ── TIMELINE ── */
+.timeline-wrap{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:24px;margin-bottom:20px;overflow-x:auto;
+}
+.tl-title{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ts);margin-bottom:20px}
+.tl-container{position:relative;min-width:600px}
+.tl-axis{display:flex;align-items:center;position:relative;margin-bottom:8px}
+.tl-line{flex:1;height:2px;background:var(--border);position:relative}
+.tl-year-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--ts);padding:0 0;margin-bottom:16px}
+.tl-track{position:relative;height:44px;margin-bottom:8px;display:flex;align-items:center}
+.tl-track-label{width:110px;font-size:13px;color:var(--ts);flex-shrink:0;text-align:right;padding-right:12px}
+.tl-track-inner{flex:1;position:relative;height:100%}
+.tl-bar{
+  position:absolute;top:50%;transform:translateY(-50%);
+  height:10px;border-radius:5px;
+  display:flex;align-items:center;
+  transition:all .6s ease;
+}
+.tl-marker{
+  position:absolute;top:50%;transform:translate(-50%,-50%);
+  width:10px;height:10px;border-radius:50%;
+  border:2px solid var(--bg);
+  cursor:pointer;transition:transform .15s;z-index:2;
+}
+.tl-marker:hover{transform:translate(-50%,-50%) scale(1.4)}
+.tl-marker-label{
+  position:absolute;top:-24px;left:50%;transform:translateX(-50%);
+  font-size:11px;color:var(--ts);white-space:nowrap;
+  background:var(--surface);padding:2px 6px;border-radius:3px;
+  border:1px solid var(--border);pointer-events:none;
+}
+
+/* ── SVG CHART ── */
+.chart-wrap{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:20px;margin-bottom:20px;
+}
+.chart-title{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ts);margin-bottom:16px;display:flex;align-items:center;gap:16px}
+.chart-legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+.chart-legend-item{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ts)}
+.chart-legend-dot{width:10px;height:3px;border-radius:2px}
+.chart-svg{width:100%;overflow:visible}
+.chart-tooltip{
+  position:fixed;background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:10px 14px;font-size:13px;
+  pointer-events:none;z-index:999;display:none;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);min-width:160px;
+}
+.chart-tooltip b{color:var(--sec);font-size:14px}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:3px;margin-bottom:16px;border-bottom:1px solid var(--border)}
+.tab{
+  padding:8px 14px;border-radius:6px 6px 0 0;
+  border:1px solid transparent;border-bottom:none;
+  background:transparent;color:var(--ts);
+  font-family:'Syne',sans-serif;font-size:13px;font-weight:700;
+  cursor:pointer;transition:all .15s;margin-bottom:-1px;letter-spacing:.03em;
+}
+.tab:hover{color:var(--tp)}
+.tab.active{background:var(--surface);color:var(--sec);border-color:var(--border);border-bottom-color:var(--surface)}
+.tp{display:none}
+.tp.active{display:block;animation:fu .25s ease}
+
+/* ── TABLE ── */
+.tw{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin-bottom:6px}
+table{width:100%;border-collapse:collapse}
+thead th{
+  padding:9px 12px;text-align:right;
+  font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ts);background:rgba(255,255,255,.02);
+  border-bottom:1px solid var(--border);white-space:nowrap;
+}
+thead th:first-child{text-align:center}
+tbody tr{border-bottom:1px solid rgba(46,48,68,.5);transition:background .1s}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+tbody tr:last-child{border-bottom:none}
+tbody td{padding:7px 12px;text-align:right;font-family:monospace;font-size:13px;color:var(--ts)}
+tbody td:first-child{text-align:center;color:var(--tp);font-size:12px}
+.hi{color:var(--tp)}
+.pos{color:var(--succ)}
+.neg{color:var(--err)}
+.tnote{
+  font-size:12px;color:var(--ts);
+  padding:7px 12px;text-align:center;
+  background:rgba(255,255,255,.01);
+  border-top:1px solid var(--border);
+  border-radius:0 0 10px 10px;
+}
+.ellr{cursor:pointer}
+.ellr td{text-align:center!important;color:var(--border)!important;font-size:12px;padding:4px}
+.ellr:hover td{color:var(--ts)!important}
+
+/* ── ALERT ── */
+.al{padding:11px 14px;border-radius:8px;font-size:14px;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px;line-height:1.6}
+.al-i{background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.2);color:var(--gold)}
+.al-w{background:var(--err-bg);border:1px solid rgba(240,82,82,.2);color:var(--err)}
+.al-g{background:var(--succ-bg);border:1px solid rgba(52,199,123,.2);color:var(--succ)}
+
+/* ── STAT GRID ── */
+.sg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.sg2{grid-template-columns:repeat(2,1fr)}
+.sg4{grid-template-columns:repeat(4,1fr)}
+.st{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.st .sl{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ts);margin-bottom:4px}
+.st .sv{font-family:monospace;font-size:17px;font-weight:700}
+.st .ss{font-size:12px;color:var(--ts);margin-top:2px}
+
+/* ── LINKS ── */
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+.el{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,.03);border:1px solid var(--border);
+  border-radius:8px;padding:10px 12px;text-decoration:none;
+  color:var(--tp);font-size:14px;transition:all .15s;
+}
+.el:hover{border-color:var(--sec);color:var(--sec)}
+.ei{font-size:18px;flex-shrink:0}
+.et{font-weight:500;font-size:13px}
+.ed{font-size:12px;color:var(--ts)}
+
+/* ── CET BADGE ── */
+.cet-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(236,200,130,.08);border:1px solid rgba(236,200,130,.2);
+  border-radius:6px;padding:6px 12px;font-size:14px;color:var(--gold);
+  cursor:pointer;margin-top:8px;
+}
+.cet-detail{
+  background:rgba(255,255,255,.02);border:1px solid var(--border);
+  border-radius:8px;padding:12px 14px;margin-top:8px;font-size:13px;
+  color:var(--ts);display:none;line-height:1.8;
+}
+.cet-detail.open{display:block}
+
+/* ── POWER-OF-PURCHASE ALERT ── */
+.pop-alert{
+  background:linear-gradient(135deg,rgba(201,168,76,.08),rgba(236,200,130,.04));
+  border:1px solid rgba(201,168,76,.2);border-radius:10px;
+  padding:16px 18px;margin-bottom:16px;
+}
+.pop-alert h4{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--sec);margin-bottom:8px}
+.pop-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px}
+.pop-grid-al{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.pop-item .pl{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ts);margin-bottom:3px}
+.pop-item .pv{font-family:monospace;font-size:16px;font-weight:700}
+
+/* ── TESOURO MONTHLY ── */
+.tes-monthly{
+  background:var(--succ-bg);border:1px solid rgba(52,199,123,.2);
+  border-radius:8px;padding:12px 16px;margin-bottom:12px;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+}
+.tes-monthly .tm-label{font-size:13px;color:var(--ts)}
+.tes-monthly .tm-val{font-family:monospace;font-size:18px;font-weight:700;color:var(--succ)}
+
+/* ── IMÓVEL 2-COL LAYOUT ── */
+.im-layout{display:grid;grid-template-columns:minmax(280px,540px) minmax(180px,1fr);gap:24px;align-items:start}
+.im-right{position:sticky;top:24px;max-height:calc(100vh - 48px);overflow-y:auto;scrollbar-width:thin;padding-right:24px}
+@media(max-width:1000px){.im-layout{grid-template-columns:1fr}.im-right{position:static;max-height:none;overflow-y:visible;padding-right:0}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .main{padding:16px}
+  .fg3,.fg4{grid-template-columns:1fr 1fr}
+  .srow{grid-template-columns:1fr}
+  .sg{grid-template-columns:1fr 1fr}
+  .lgrid{grid-template-columns:1fr}
+  .pop-grid{grid-template-columns:1fr 1fr}
+}
+
+.btn-tog{background:var(--surface);border:1px solid var(--border);color:var(--ts);font-size:13px;font-weight:600;padding:5px 14px;border-radius:6px;cursor:pointer;transition:.15s}
+.btn-tog.on{background:var(--sec);border-color:var(--sec);color:#fff}
+
+/* ── DASHBOARD VISUALIZAÇÕES ── */
+.dash-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-top:20px}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}
+.charts-grid .dash-card{margin-top:0;display:flex;flex-direction:column}
+.charts-grid .dg-cbox{flex:1;min-height:0;position:relative}
+.charts-grid canvas{width:100%!important;height:100%!important;display:block;min-height:180px}
+@media(max-width:1100px){.charts-grid{grid-template-columns:1fr}}
+.dash-h{font-size:12px;text-transform:uppercase;letter-spacing:.16em;color:var(--ts);margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.dash-h::after{content:'';flex:1;height:1px;background:var(--border)}
+.dg-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+@media(max-width:720px){.dg-cols{grid-template-columns:1fr;gap:16px}}
+.dg-col{padding:0 20px}
+.dg-col:first-child{padding-left:0}.dg-col:last-child{padding-right:0}
+.dg-col:not(:last-child){border-right:1px solid var(--border)}
+@media(max-width:720px){.dg-col{border-right:none;padding:0 0 14px;border-bottom:1px solid var(--border)}.dg-col:last-child{border-bottom:none}}
+.dg-colname{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.dg-meta{font-size:13px;color:var(--ts);margin-bottom:10px}
+.dg-total{font-size:28px;font-weight:700;color:var(--sec);font-variant-numeric:tabular-nums;line-height:1;margin-bottom:12px}
+.dg-col.best .dg-total{color:var(--succ)}
+.dg-brk{list-style:none;padding:0;margin:0}
+.dg-brk li{display:flex;justify-content:space-between;font-size:14px;padding:4px 0;border-bottom:1px solid var(--border)}
+.dg-brk li:last-child{border-bottom:none}
+.dg-brk .dk{color:var(--ts)}
+.dg-brk .dv{font-variant-numeric:tabular-nums}
+.dg-brk .dv.neg{color:var(--err)}
+.dg-badge{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--succ);border:1px solid var(--succ);border-radius:20px;padding:2px 8px}
+.dg-foot{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:14px;color:var(--ts)}
+.dg-foot b{color:var(--tp)}
+.dg-legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.dg-lg{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ts)}
+.dg-sw{width:18px;height:2px;border-radius:1px}
+.dg-sw.dash{background:repeating-linear-gradient(90deg,var(--err) 0 4px,transparent 4px 7px)!important}
+.dg-cbox{position:relative}
+.dg-tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;opacity:0;transition:opacity .1s;min-width:160px;z-index:5;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.dg-tip .dt{color:var(--ts);font-size:12px;margin-bottom:4px}
+.dg-tip .dr{display:flex;justify-content:space-between;gap:10px;padding:1px 0;font-variant-numeric:tabular-nums}
+.dg-tabs{display:flex;gap:6px;margin-bottom:14px}
+.dg-tab{background:var(--surface);border:1px solid var(--border);color:var(--ts);font-size:14px;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer;transition:.15s}
+.dg-tab.on.tes{color:var(--succ);border-color:var(--succ)}
+.dg-tab.on.fin{color:var(--sec);border-color:var(--sec)}
+.dg-tab.on.con{color:var(--gold);border-color:var(--gold)}
+.dg-cfoot{margin-top:12px;font-size:14px;color:var(--ts)}
+.dg-cfoot b{color:var(--tp)}
+.dg-note{margin-top:8px;font-size:13px;color:var(--ts)}</style>
+</head>
+<body>
+
+<div class="chart-tooltip" id="tooltip"></div>
+
+
+
+<div class="shell">
+<nav class="sidebar">
+  <div class="ns">Investimento Imobiliário</div>
+  <div class="ni active" onclick="gp('imovel',this)"><span class="nd"></span>Aquisição<span class="ni-badge">3C</span></div>
+  <div class="ni ni-soon"><span class="nd"></span>Rentabilidade<span class="ni-badge">em breve</span></div>
+  <div class="ni" onclick="gp('he',this)"><span class="nd"></span>Home Equity</div>
+  <div class="ni" onclick="gp('quitacao',this)"><span class="nd"></span>Quitação / Amortização</div>
+  <div class="ns">Ferramentas</div>
+  <div class="ni" onclick="gp('vf',this)"><span class="nd"></span>Valor Futuro</div>
+  <div class="ni" onclick="gp('juros',this)"><span class="nd"></span>Conversor de Juros</div>
+  <div class="ni" onclick="gp('links',this)"><span class="nd"></span>Links Úteis</div>
+  <div class="ns ns-toggle collapsed" onclick="this.classList.toggle('collapsed')">Outros <span class="ns-arr">▸</span></div>
+  <div class="ns-group">
+    <div class="ni" onclick="gp('veiculo',this)"><span class="nd"></span>Veículo<span class="ni-badge">3C</span></div>
+    <div class="ni" onclick="gp('ae',this)"><span class="nd"></span>Auto Equity</div>
+    <div class="ni" onclick="gp('cg',this)"><span class="nd"></span>Capital de Giro</div>
+  </div>
+</nav>
+
+<div class="main">
+
+<!-- ══════════════════════════════════
+     IMÓVEL
+══════════════════════════════════ -->
+<div id="page-imovel" class="page active">
+  <div class="im-layout">
+  <div class="im-left">
+
+  <div class="pt">Investimento Imobiliário</div>
+
+  <!-- TAXAS -->
+  <div class="card" style="margin-bottom:18px">
+    <div class="ct">Configure as taxas</div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;gap:14px;align-items:flex-end">
+    <div class="rc">
+      <label>Financiamento Pós (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="im_rf" value="10,99" step="0.1"  onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="urm('im_rf','im_rf_m');calcImovel()">
+        <span class="rm" id="im_rf_m">≈1,02% a.m.</span>
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('fin')">↻ BCB</span>
+    </div>
+    <div class="rc">
+      <label>Financiamento Prefixada (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="im_rf_pre" value="14,95" step="0.1"  onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="urm('im_rf_pre','im_rf_pre_m');calcImovel()">
+        <span class="rm" id="im_rf_pre_m">≈1,13% a.m.</span>
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('fin')">↻ BCB</span>
+    </div>
+    </div>
+    <div style="display:flex;gap:14px;align-items:flex-end">
+    <div class="rc">
+      <label>TR (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="im_tr" value="1,96" step="0.1" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="calcImovel()">
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('tr')">↻ BCB</span>
+    </div>
+    <div class="rc">
+      <label>IPCA (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="im_ipca" value="3,81" step="0.1" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="calcImovel()">
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('ipca')">↻ BCB</span>
+    </div>
+    <div class="rc">
+      <label>INCC (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="im_incc" value="6,82" step="0.1" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="calcImovel()">
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('incc')">↻ FGV</span>
+    </div>
+    <div class="rc">
+      <label>IGP-M (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="im_igpm" value="2,76" step="0.1" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="calcImovel()">
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('igpm')">↻ FGV</span>
+    </div>
+    <div class="rc">
+      <label>Selic (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="im_rs" value="14,75" step="0.1"  onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="calcImovel()">
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('selic')">↻ BCB</span>
+    </div>
+    </div>
+    </div>
+    <div class="rate-note" style="margin-top:12px">⚠ Taxa sujeita à análise de perfil do cliente — o valor indicado é uma referência de mercado e pode não corresponder à realidade.</div>
+  </div>
+
+  <!-- DADOS PRINCIPAIS -->
+  <!-- inputs ocultos para manter compatibilidade com calcImovel() -->
+  <input type="hidden" id="im_sis" value="SAC">
+  <input type="hidden" id="im_cor" value="NENHUMA">
+  <input type="hidden" id="im_contemp" value="36">
+  <input type="hidden" id="im_lance_proprio" value="0">
+  <input type="hidden" id="im_pr" value="240">
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="ct">Valor de crédito e investimento <span id="im_mode_badge" style="font-size:9px;font-style:normal;text-transform:none;letter-spacing:0;color:var(--ts);background:var(--border);border-radius:4px;padding:2px 7px;margin-left:4px"></span></div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="f">
+        <label>Valor do Imóvel (R$)</label>
+        <input type="text" id="im_val" value="" placeholder="ex: R$ 500.000" onfocus="currencyFocus(this)" onkeydown="currencyKeydown(this,event)" onblur="maskCurrency(this);imDetectMode();calcImovel()">
+      </div>
+      <div class="f">
+        <label>Recurso Próprio (R$)</label>
+        <input type="text" id="im_ent" value="" placeholder="ex: R$ 125.000" onfocus="currencyFocus(this)" onkeydown="currencyKeydown(this,event)" onblur="maskCurrency(this);imDetectMode();calcImovel()">
+      </div>
+      <div class="f">
+        <label>Aporte mensal (R$)</label>
+        <input type="text" id="im_ap" value="R$ 2.000,00" onfocus="currencyFocus(this)" onkeydown="currencyKeydown(this,event)" onblur="maskCurrency(this);imDetectMode();calcImovel()">
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--border)">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ts);font-weight:600">Paga aluguel?</div>
+        <div style="display:flex;gap:6px">
+          <button id="im_alug_n" class="btn-tog on" onclick="imSetAlug(false)">Não</button>
+          <button id="im_alug_s" class="btn-tog" onclick="imSetAlug(true)">Sim</button>
+        </div>
+        <div id="im_alug_wrap" style="display:none">
+          <div class="f" style="flex-direction:row;align-items:center;gap:8px">
+            <label style="white-space:nowrap">Valor do aluguel (R$)</label>
+            <input type="text" id="im_alug_val" value="R$ 2.000,00" style="width:140px" onfocus="currencyFocus(this)" onkeydown="currencyKeydown(this,event)" onblur="maskCurrency(this)">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="card" id="ajustes-globais" style="margin-top:18px;display:none">
+    <div class="ct">Ajustes Globais da Comparação</div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="f">
+        <label>Prazo da Simulação</label>
+        <select id="im_pr_global" onchange="syncPrazoGlobal();calcImovel()">
+          <option value="36">36 meses — 3,0 anos</option>
+          <option value="50">50 meses — 4,2 anos</option>
+          <option value="60">60 meses — 5,0 anos</option>
+          <option value="70">70 meses — 5,8 anos</option>
+          <option value="100">100 meses — 8,3 anos</option>
+          <option value="120">120 meses — 10,0 anos</option>
+          <option value="135">135 meses — 11,3 anos</option>
+          <option value="150">150 meses — 12,5 anos</option>
+          <option value="165">165 meses — 13,8 anos</option>
+          <option value="180">180 meses — 15,0 anos</option>
+          <option value="200">200 meses — 16,7 anos</option>
+          <option value="220">220 meses — 18,3 anos</option>
+          <option value="240" selected>240 meses — 20,0 anos</option>
+          <option value="300">300 meses — 25,0 anos</option>
+          <option value="360">360 meses — 30,0 anos</option>
+          <option value="420">420 meses — 35,0 anos</option>
+        </select>
+        <div class="hint">Mesmo prazo aplicado aos 3 caminhos. A lista considera o plano de consórcio selecionado.</div>
+      </div>
+      <div class="f">
+        <label>Correção Monetária</label>
+        <select id="im_cor_global" onchange="syncCorrecaoGlobal();calcImovel()">
+          <option value="off" selected>Desativada</option>
+          <option value="TR">Financiamento: TR · Consórcio: INCC · Aluguel: IGP-M</option>
+          <option value="IPCA">Financiamento: IPCA · Consórcio: INCC · Aluguel: IGP-M</option>
+        </select>
+        <div class="hint">Para financiamento, escolha TR ou IPCA. Para consórcio, a correção é pelo INCC. O aluguel é reajustado pelo IGP-M.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:18px;font-size:10px;line-height:1.8;color:var(--ts);opacity:.75;padding-bottom:24px">
+    Os resultados apresentados consistem em uma simulação e não valem como proposta.<br>
+    As taxas utilizadas são informadas pelo próprio usuário — a New World não indica nem garante nenhuma taxa.<br>
+    Comparativo realizado com base nas informações declaradas durante o processo de simulação.<br>
+    Todos os valores de seguros, parcelas e taxas apresentados estão sujeitos a alterações conforme análise de crédito, capacidade de pagamento e condições praticadas pelas instituições financeiras.<br>
+    Condições reais são apresentadas somente após formalização da proposta com documentação completa. <a href="https://www.nwapp.com.br/acesso" target="_blank" style="color:inherit;text-decoration:underline">Preencha a pré-análise de crédito</a> e descubra quais modalidades são cabíveis para você.
+  </div>
+
+  </div><!-- /im-left -->
+  <div class="im-right">
+    <p class="ps" style="margin-top:15px;margin-bottom:6px">Compare os 3 caminhos: guardar no Tesouro, financiar ou consorciar.</p>
+    <div id="res-imovel" class="ra" style="margin-top:0"></div>
+  </div><!-- /im-right -->
+  </div><!-- /im-layout -->
+
+</div>
+
+<!-- ══════════════════════════════════
+     PÁGINAS EM BREVE
+══════════════════════════════════ -->
+<div id="page-veiculo" class="page">
+  <div class="pt">Aquisição de Veículo</div>
+  <p class="ps">Compare os 3 caminhos: guardar no Tesouro, financiar ou consorciar veículo.</p>
+
+  <div class="rstrip">
+    <div class="rc">
+      <label>Financiamento Pós (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="ve_rf" value="26,00" step="0.1"  onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="urm('ve_rf','ve_rf_m');calcVeiculo()">
+        <span class="rm" id="ve_rf_m">≈1,94% a.m.</span>
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('finveiculo')">↻ BCB</span>
+    </div>
+    <div class="rc">
+      <label>Financiamento Prefixada (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="ve_rf_pre" value="28,00" step="0.1"  onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="urm('ve_rf_pre','ve_rf_pre_m');calcVeiculo()">
+        <span class="rm" id="ve_rf_pre_m">≈2,07% a.m.</span>
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('finveiculo')">↻ BCB</span>
+    </div>
+    <div class="rc">
+      <label>IPCA (a.a.%)</label>
+      <div class="rrow"><input type="text" inputmode="decimal" id="ve_ipca" value="3,81" step="0.1" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="calcVeiculo()"></div>
+      <span class="api-badge" onclick="fetchBCBRate('ipca')">↻ BCB</span>
+    </div>
+    <div class="rc">
+      <label>Selic (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="ve_rs" value="14,75" step="0.1"  onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="urm('ve_rs','ve_rs_m');calcVeiculo()">
+        <span class="rm" id="ve_rs_m">≈1,15% a.m.</span>
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('selic')">↻ BCB</span>
+    </div>
+    <div style="flex:1;align-self:flex-end">
+      <div class="rate-note">⚠ Taxa de financiamento editável. Consulte a referência BCB e ajuste conforme perfil, instituição e modalidade.</div>
+    </div>
+  </div>
+
+  <input type="hidden" id="ve_sis" value="PRICE">
+  <input type="hidden" id="ve_cor" value="NENHUMA">
+  <input type="hidden" id="ve_pr" value="60">
+  <input type="hidden" id="ve_contemp" value="24">
+  <input type="hidden" id="ve_lance_proprio" value="0">
+
+  <div class="fg4">
+    <div class="f">
+      <label>Tipo de Veículo</label>
+      <select id="ve_tipo" onchange="updateVeiculoDefaults()">
+        <option value="auto" selected>Automóvel</option>
+        <option value="moto">Moto</option>
+        <option value="pesado">Pesados</option>
+      </select>
+    </div>
+    <div class="f">
+      <label>Valor FIPE / Veículo (R$)</label>
+      <input type="text" id="ve_val" value="R$ 100.000,00" onfocus="currencyFocus(this)" onkeydown="currencyKeydown(this,event)" onblur="maskCurrency(this)">
+    </div>
+    <div class="f">
+      <label>Entrada / Recurso Próprio (R$)</label>
+      <input type="text" id="ve_ent" value="R$ 20.000,00" onfocus="currencyFocus(this)" onkeydown="currencyKeydown(this,event)" onblur="maskCurrency(this)">
+    </div>
+    <div class="f">
+      <label>Aporte Mensal (R$)</label>
+      <input type="text" id="ve_ap" value="R$ 1.000,00" onfocus="currencyFocus(this)" onkeydown="currencyKeydown(this,event)" onblur="maskCurrency(this)">
+    </div>
+  </div>
+
+  <button class="btn btn-sec" onclick="calcVeiculo()">⟶ Simular Veículo</button>
+
+  <div class="card" id="ve-ajustes-globais" style="margin-top:18px;display:none">
+    <div class="ct">Ajustes Globais da Comparação</div>
+    <div class="fg2">
+      <div class="f">
+        <label>Prazo da Simulação</label>
+        <select id="ve_pr_global" onchange="syncPrazoVeiculo();calcVeiculo()">
+          <option value="36">36 meses — 3,0 anos</option>
+          <option value="50">50 meses — 4,2 anos</option>
+          <option value="60" selected>60 meses — 5,0 anos</option>
+          <option value="70">70 meses — 5,8 anos</option>
+          <option value="80">80 meses — 6,7 anos</option>
+          <option value="90">90 meses — 7,5 anos</option>
+          <option value="100">100 meses — 8,3 anos</option>
+        </select>
+        <div class="hint" id="ve-prazo-hint">Mesmo prazo aplicado aos 3 caminhos.</div>
+      </div>
+      <div class="f">
+        <label>Correção Monetária</label>
+        <select id="ve_cor_global" onchange="syncCorrecaoVeiculo();calcVeiculo()">
+          <option value="off" selected>Desativada</option>
+          <option value="IPCA">Financiamento IPCA · Consórcio IPCA</option>
+        </select>
+        <div class="hint">Nas tabelas de veículo, o consórcio usa IPCA.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="res-veiculo" class="ra"></div>
+
+  <div style="margin-top:18px;font-size:10px;line-height:1.8;color:var(--ts);opacity:.75;padding-bottom:24px">
+    Os resultados apresentados consistem em uma simulação e não valem como proposta.<br>
+    Comparativo realizado com base nas informações declaradas durante o processo de simulação.<br>
+    Todos os valores de seguros, parcelas e taxas apresentados estão sujeitos a alterações conforme análise de crédito, capacidade de pagamento e condições praticadas pelas instituições financeiras.
+  </div>
+</div>
+<div id="page-investimento" class="page">
+  <div class="pt">Investimento</div>
+  <p class="ps" style="color:var(--ts)">Em construção — disponível na próxima versão.</p>
+</div>
+<div id="page-he" class="page">
+  <div class="pt">Home Equity</div>
+  <p class="ps">Simule crédito com garantia de imóvel.</p>
+
+  <div class="rstrip">
+    <div class="rc">
+      <label>Taxa pós-fixada (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="he_rf" value="14,50" step="0.1"  onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="urm('he_rf','he_rf_m');calcHE()">
+        <span class="rm" id="he_rf_m">≈1,13% a.m.</span>
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('fin')">↻ BCB</span>
+    </div>
+
+    <div class="rc">
+      <label>Taxa prefixada (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="he_rf_pre" value="17,00" step="0.1"  onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="urm('he_rf_pre','he_rf_pre_m');calcHE()">
+        <span class="rm" id="he_rf_pre_m">≈1,32% a.m.</span>
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('fin')">↻ BCB</span>
+    </div>
+
+    <div class="rc">
+      <label>IPCA (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="he_ipca" value="3,81" step="0.1" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="calcHE()">
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('ipca')">↻ BCB</span>
+    </div>
+
+    <div class="rc">
+      <label>Selic (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="he_rs" value="14,75" step="0.1"  onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="urm('he_rs','he_rs_m');calcHE()">
+        <span class="rm" id="he_rs_m">≈1,15% a.m.</span>
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('selic')">↻ BCB</span>
+    </div>
+
+    <div style="flex:1;align-self:flex-end">
+      <div class="rate-note">⚠ Taxas editáveis com referência de mercado.</div>
+    </div>
+  </div>
+
+  <input type="hidden" id="he_sis" value="PRICE">
+  <input type="hidden" id="he_cor" value="NENHUMA">
+  <input type="hidden" id="he_pr" value="240">
+
+  <div class="card" style="margin-bottom:18px">
+    <div class="ct">Valor do Crédito e Investimento</div>
+    <div class="fg3">
+      <div class="f">
+        <label>Valor do Imóvel (R$)</label>
+        <input type="text" id="he_val" value="" placeholder="ex: R$ 500.000,00" onfocus="currencyFocus(this)" onkeydown="currencyKeydown(this,event)" onblur="maskCurrency(this);calcHE()">
+      </div>
+      <div class="f">
+        <label>% do imóvel que quer levantar</label>
+        <input type="number" id="he_ltv" value="60" min="1" max="60" step="1" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="calcHE()">
+        <div class="hint">Limite máximo: 60% do valor do imóvel</div>
+      </div>
+      <div class="f">
+        <label>Aporte Mensal (R$)</label>
+        <input type="text" id="he_ap" value="R$ 2.000,00" onfocus="currencyFocus(this)" onkeydown="currencyKeydown(this,event)" onblur="maskCurrency(this);calcHE()">
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="he-ajustes" style="margin-top:18px">
+    <div class="ct">Ajustes Globais da Simulação</div>
+    <div class="fg2">
+      <div class="f">
+        <label>Prazo</label>
+        <select id="he_pr_global" onchange="g('he_pr').value=this.value;calcHE()">
+          <option value="60">60 meses — 5 anos</option>
+          <option value="90">90 meses — 7,5 anos</option>
+          <option value="120">120 meses — 10 anos</option>
+          <option value="150">150 meses — 12,5 anos</option>
+          <option value="180">180 meses — 15 anos</option>
+          <option value="210">210 meses — 17,5 anos</option>
+          <option value="240" selected>240 meses — 20 anos</option>
+        </select>
+      </div>
+      <div class="f">
+        <label>Correção Monetária</label>
+        <select id="he_cor_global" onchange="g('he_cor').value=this.value;calcHE()">
+          <option value="NENHUMA" selected>Desativada</option>
+          <option value="IPCA">IPCA</option>
+        </select>
+        <div class="hint">Home Equity usa somente IPCA quando houver correção.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="res-he" class="ra"></div>
+
+  <div style="margin-top:18px;font-size:10px;line-height:1.8;color:var(--ts);opacity:.75;padding-bottom:24px">
+    Os resultados apresentados consistem em uma simulação e não valem como proposta.<br>
+    Comparativo realizado com base nas informações declaradas durante o processo de simulação.<br>
+    Todos os valores de seguros, parcelas e taxas apresentados estão sujeitos a alterações conforme análise de crédito, capacidade de pagamento e condições praticadas pelas instituições financeiras.
+  </div>
+</div>
+<div id="page-ae" class="page">
+  <div class="pt">Auto Equity</div>
+  <p class="ps">Simule crédito com garantia de veículo passeio ou utilitário.</p>
+
+  <div class="rstrip">
+    <div class="rc">
+      <label>Taxa pós-fixada (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="ae_rf" value="18,90" step="0.1"  onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="urm('ae_rf','ae_rf_m');calcAE()">
+        <span class="rm" id="ae_rf_m">≈1,45% a.m.</span>
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('finveiculo')">↻ BCB</span>
+    </div>
+
+    <div class="rc">
+      <label>Taxa prefixada (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="ae_rf_pre" value="22,00" step="0.1"  onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="urm('ae_rf_pre','ae_rf_pre_m');calcAE()">
+        <span class="rm" id="ae_rf_pre_m">≈1,67% a.m.</span>
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('finveiculo')">↻ BCB</span>
+    </div>
+
+    <div class="rc">
+      <label>IPCA (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="ae_ipca" value="3,81" step="0.1" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="calcAE()">
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('ipca')">↻ BCB</span>
+    </div>
+
+    <div style="flex:1;align-self:flex-end">
+      <div class="rate-note">⚠ Auto Equity aceita apenas veículo passeio ou utilitário. Taxas editáveis e sujeitas à análise.</div>
+    </div>
+  </div>
+
+  <input type="hidden" id="ae_cor" value="NENHUMA">
+  <input type="hidden" id="ae_pr" value="60">
+
+  <div class="fg3">
+    <div class="f">
+      <label>Valor FIPE / Veículo (R$)</label>
+      <input type="text" id="ae_val" value="R$ 100.000,00" onfocus="currencyFocus(this)" onkeydown="currencyKeydown(this,event)" onblur="maskCurrency(this)">
+    </div>
+    <div class="f">
+      <label>% do veículo que quer levantar</label>
+      <input type="number" id="ae_ltv" value="80" min="1" max="80" step="1" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="calcAE()">
+      <div class="hint">Limite máximo: 80% do valor FIPE</div>
+    </div>
+    <div class="f">
+      <label>Aporte Mensal (R$)</label>
+      <input type="text" id="ae_ap" value="R$ 1.000,00" onfocus="currencyFocus(this)" onkeydown="currencyKeydown(this,event)" onblur="maskCurrency(this)">
+      <div class="hint">Opcional para planejamento financeiro</div>
+    </div>
+  </div>
+
+  <div class="istrip">
+    <b>Veículos aceitos:</b> passeio e utilitário. Moto e pesados não são considerados nesta modalidade.
+  </div>
+
+  <button class="btn btn-sec" onclick="calcAE()">⟶ Simular Auto Equity</button>
+
+  <div class="card" id="ae-ajustes" style="margin-top:18px;display:none">
+    <div class="ct">Ajustes Globais da Simulação</div>
+    <div class="fg2">
+      <div class="f">
+        <label>Prazo</label>
+        <select id="ae_pr_global" onchange="g('ae_pr').value=this.value;calcAE()">
+          <option value="24">24 meses — 2 anos</option>
+          <option value="36">36 meses — 3 anos</option>
+          <option value="48">48 meses — 4 anos</option>
+          <option value="60" selected>60 meses — 5 anos</option>
+          <option value="72">72 meses — 6 anos</option>
+        </select>
+      </div>
+      <div class="f">
+        <label>Correção Monetária</label>
+        <select id="ae_cor_global" onchange="g('ae_cor').value=this.value;calcAE()">
+          <option value="NENHUMA" selected>Desativada</option>
+          <option value="IPCA">IPCA</option>
+        </select>
+        <div class="hint">Quando ativa, aplica IPCA nos modelos pós-fixados.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="res-ae" class="ra"></div>
+
+  <div style="margin-top:18px;font-size:10px;line-height:1.8;color:var(--ts);opacity:.75;padding-bottom:24px">
+    Os resultados apresentados consistem em uma simulação e não valem como proposta.<br>
+    Comparativo realizado com base nas informações declaradas durante o processo de simulação.<br>
+    Todos os valores de seguros, parcelas e taxas apresentados estão sujeitos a alterações conforme análise de crédito, capacidade de pagamento e condições praticadas pelas instituições financeiras.
+  </div>
+</div>
+
+<div id="page-quitacao" class="page">
+  <div class="pt">Quitação / Amortização</div>
+  <p class="ps">Compare o efeito de uma amortização extraordinária em PRICE ou SAC.</p>
+
+  <div class="rstrip">
+    <div class="rc">
+      <label>Taxa anual (CET %)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="qt_taxa" value="21,28" step="0.01" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="urm('qt_taxa','qt_taxa_m');calcQuitacao()">
+        <span class="rm" id="qt_taxa_m">≈1,62% a.m.</span>
+      </div>
+    </div>
+    <div class="rc">
+      <label>Correção monetária</label>
+      <div class="rrow">
+        <select id="qt_cor_tipo" onchange="qtCorrToggle();calcQuitacao()" style="background:var(--surface);border:1px solid var(--border);color:var(--tp);padding:8px 10px;border-radius:6px;font-size:14px;font-family:inherit;">
+          <option value="NENHUMA">Sem correção</option>
+          <option value="TR">TR</option>
+          <option value="IPCA">IPCA</option>
+        </select>
+      </div>
+    </div>
+    <div class="rc" id="qt_corr_box" style="display:none">
+      <label id="qt_corr_label">Taxa a.a. (%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="qt_corr" value="0,20" step="0.01" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="urm('qt_corr','qt_corr_m');calcQuitacao()">
+        <span class="rm" id="qt_corr_m"></span>
+      </div>
+      <span class="api-badge" id="qt_bcb_badge" onclick="fetchBCBRate(g('qt_cor_tipo').value.toLowerCase())">↻ BCB</span>
+    </div>
+    <div style="flex:1;align-self:flex-end">
+      <div class="rate-note">Simulação sem seguros/taxas adicionais. Use a taxa CET do contrato para aproximar melhor.</div>
+    </div>
+  </div>
+
+  <div class="fg3">
+    <div class="f">
+      <label>Saldo devedor atual (R$)</label>
+      <input type="text" id="qt_saldo" value="R$ 360.000,00" onfocus="currencyFocus(this)" onkeydown="currencyKeydown(this,event)" onblur="maskCurrency(this)">
+    </div>
+    <div class="f">
+      <label>Prazo restante</label>
+      <input type="number" id="qt_prazo" value="240" min="1" step="1" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="calcQuitacao()">
+      <div class="hint">Em meses</div>
+    </div>
+    <div class="f">
+      <label>Sistema</label>
+      <select id="qt_sistema">
+        <option value="PRICE" selected>PRICE — Parcela Fixa</option>
+        <option value="SAC">SAC — Amortização Constante</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="fg4">
+    <div class="f">
+      <label>Valor da amortização (R$)</label>
+      <input type="text" id="qt_amort" value="R$ 100.000,00" onfocus="currencyFocus(this)" onkeydown="currencyKeydown(this,event)" onblur="maskCurrency(this)">
+    </div>
+    <div class="f">
+      <label>Tipo</label>
+      <select id="qt_tipo_amort">
+        <option value="unica" selected>Única</option>
+        <option value="recorrente">Recorrente</option>
+      </select>
+    </div>
+    <div class="f">
+      <label>Primeira amortização</label>
+      <input type="number" id="qt_mes" value="12" min="1" step="1" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="calcQuitacao()">
+      <div class="hint">Ex.: 12 = após a 12ª parcela</div>
+    </div>
+    <div class="f">
+      <label>Frequência</label>
+      <input type="number" id="qt_freq" value="6" min="1" step="1" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="calcQuitacao()">
+      <div class="hint">Em meses. Ex.: 6 = semestral</div>
+    </div>
+  </div>
+
+  <button class="btn btn-sec" onclick="calcQuitacao()">⟶ Simular Amortização</button>
+
+  <div id="res-quitacao" class="ra"></div>
+
+  <div style="margin-top:18px;font-size:10px;line-height:1.8;color:var(--ts);opacity:.75;padding-bottom:24px">
+    Os resultados apresentados consistem em uma simulação e não valem como proposta.<br>
+    A amortização real pode variar conforme regras contratuais, data de pagamento, atualização do saldo e política da instituição financeira.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     CONVERSOR DE JUROS
+══════════════════════════════════ -->
+<div id="page-juros" class="page">
+  <div class="pt">Conversor de Juros</div>
+  <p class="ps">Converta taxas entre mensal e anual. Válido apenas para <strong>juros compostos</strong>.</p>
+
+  <div class="card" style="max-width:480px">
+    <div class="ct">Taxa Mensal → Anual</div>
+    <div style="background:rgba(255,193,7,.07);border:1px solid rgba(255,193,7,.25);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--ts);margin-bottom:16px;line-height:1.6">
+      ⚠ Fórmula de <b>juros compostos</b>: taxa anual = (1 + i)¹² − 1. Não válida para juros simples.
+    </div>
+    <div class="fg2" style="align-items:flex-end">
+      <div class="f">
+        <label>Taxa mensal (%)</label>
+        <input type="text" inputmode="decimal" id="jr_mensal" value="1,00" step="0.01" min="0"
+          onfocus="this.select()"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
+          oninput="calcJurosMensalParaAnual()"
+          onblur="calcJurosMensalParaAnual()">
+      </div>
+      <div class="f">
+        <label>Taxa anual equivalente (%)</label>
+        <input type="text" id="jr_anual_result" readonly
+          style="background:rgba(255,255,255,.04);color:var(--succ);font-weight:700;cursor:default">
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="max-width:480px;margin-top:18px">
+    <div class="ct">Taxa Anual → Mensal</div>
+    <div style="background:rgba(255,193,7,.07);border:1px solid rgba(255,193,7,.25);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--ts);margin-bottom:16px;line-height:1.6">
+      ⚠ Fórmula de <b>juros compostos</b>: taxa mensal = (1 + i)^(1/12) − 1. Não válida para juros simples.
+    </div>
+    <div class="fg2" style="align-items:flex-end">
+      <div class="f">
+        <label>Taxa anual (%)</label>
+        <input type="text" inputmode="decimal" id="jr_anual" value="12,00" step="0.1" min="0"
+          onfocus="this.select()"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
+          oninput="calcJurosAnualParaMensal()"
+          onblur="calcJurosAnualParaMensal()">
+      </div>
+      <div class="f">
+        <label>Taxa mensal equivalente (%)</label>
+        <input type="text" id="jr_mensal_result" readonly
+          style="background:rgba(255,255,255,.04);color:var(--succ);font-weight:700;cursor:default">
+      </div>
+    </div>
+  </div>
+
+
+</div>
+
+
+<!-- ══════════════════════════════════
+     VALOR FUTURO
+══════════════════════════════════ -->
+<div id="page-vf" class="page">
+  <div class="pt">Valor Futuro</div>
+
+  <!-- SEÇÃO 1: TESOURO -->
+  <div class="card vf-sec closed" id="vf_sec_tes" style="max-width:520px;margin-top:16px">
+    <div class="vf-hd" onclick="vfToggle('vf_sec_tes')">
+      <span>Investimento Tesouro</span><span class="vf-arr">▸</span>
+    </div>
+    <div class="vf-body">
+      <div class="fg2" style="margin-bottom:12px;margin-top:14px">
+        <div class="f">
+          <label>Valor inicial</label>
+          <input type="text" id="vf_ini" value="" placeholder="ex: R$ 10.000,00"
+            onfocus="currencyFocus(this)"
+            onkeydown="currencyKeydown(this,event,calcVF)"
+            onblur="maskCurrency(this);calcVF()">
+        </div>
+        <div class="f">
+          <label>Aporte mensal</label>
+          <input type="text" id="vf_ap" value="" placeholder="ex: R$ 500,00"
+            onfocus="currencyFocus(this)"
+            onkeydown="currencyKeydown(this,event,calcVF)"
+            onblur="maskCurrency(this);calcVF()">
+        </div>
+      </div>
+      <div class="fg2">
+        <div class="f">
+          <label>Prazo (meses)</label>
+          <input type="text" inputmode="decimal" id="vf_prazo" value="60"
+            onfocus="this.select()"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
+            oninput="calcVF();calcVFImovel()" onblur="calcVF();calcVFImovel()">
+        </div>
+        <div class="f">
+          <label>Tesouro Selic (% a.a.)</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="text" inputmode="decimal" id="vf_selic" value="14,75"
+              onfocus="this.select()"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
+              oninput="calcVF()" onblur="calcVF()" style="flex:1">
+            <span class="api-badge" onclick="fetchSelicVF()">↻ BCB</span>
+          </div>
+        </div>
+      </div>
+      <div id="vf_result_card" style="display:none;margin-top:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+            <div style="font-size:10px;color:var(--ts);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Total investido</div>
+            <div id="vf_out_investido" style="font-size:16px;font-weight:700;color:var(--tp)">—</div>
+          </div>
+          <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+            <div style="font-size:10px;color:var(--ts);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Rendimento bruto</div>
+            <div id="vf_out_rendimento" style="font-size:16px;font-weight:700;color:var(--succ)">—</div>
+          </div>
+        </div>
+        <div style="height:1px;background:var(--border);margin:12px 0"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="background:rgba(52,199,123,.08);border:1px solid rgba(52,199,123,.3);border-radius:10px;padding:14px 16px">
+            <div style="font-size:10px;color:var(--ts);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Valor futuro bruto</div>
+            <div id="vf_out_bruto" style="font-size:16px;font-weight:700;color:var(--succ)">—</div>
+          </div>
+          <div style="background:rgba(240,82,82,.06);border:1px solid rgba(240,82,82,.25);border-radius:10px;padding:14px 16px">
+            <div style="font-size:10px;color:var(--ts);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">IR estimado</div>
+            <div id="vf_out_ir" style="font-size:16px;font-weight:700;color:var(--err)">—</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;background:rgba(52,199,123,.08);border:1px solid rgba(52,199,123,.3);border-radius:10px;padding:16px 18px">
+          <div style="font-size:10px;color:var(--ts);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Valor futuro líquido (após IR)</div>
+          <div id="vf_out_liquido" style="font-size:22px;font-weight:700;color:var(--gold)">—</div>
+        </div>
+        <div id="vf_ir_note" style="margin-top:12px;font-size:11px;color:var(--ts);background:rgba(255,193,7,.06);border:1px solid rgba(255,193,7,.2);border-radius:8px;padding:10px 14px;line-height:1.6"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEÇÃO 2: IMÓVEL -->
+  <div class="card vf-sec closed" id="vf_sec_im" style="max-width:520px;margin-top:10px">
+    <div class="vf-hd" onclick="vfToggle('vf_sec_im')">
+      <span>Valorização Imobiliária</span><span class="vf-arr">▸</span>
+    </div>
+    <div class="vf-body">
+      <div class="fg2" style="margin-bottom:12px;margin-top:14px">
+        <div class="f">
+          <label>Valor atual do imóvel (R$)</label>
+          <input type="text" id="vf_imovel" value=""
+            placeholder="ex: R$ 500.000,00"
+            onfocus="currencyFocus(this)"
+            onkeydown="currencyKeydown(this,event,calcVFImovel)"
+            onblur="maskCurrency(this);calcVFImovel()">
+        </div>
+        <div class="f"></div>
+      </div>
+      <div class="fg2">
+        <div class="f">
+          <label>Prazo (meses)</label>
+          <input type="text" inputmode="decimal" id="vf_prazo_im" value="60"
+            onfocus="this.select()"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
+            onblur="calcVFImovel()">
+        </div>
+        <div class="f">
+          <label>Valorização anual (% a.a.)</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="text" inputmode="decimal" id="vf_incc" value="6,82"
+              onfocus="this.select()"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
+              onblur="calcVFImovel()" style="flex:1">
+            <span class="api-badge" onclick="fetchBCBRate('incc')">↻ FGV</span>
+          </div>
+        </div>
+      </div>
+      <div id="vf_imovel_result" style="display:none;margin-top:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+            <div style="font-size:10px;color:var(--ts);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Valor atual</div>
+            <div id="vf_im_atual" style="font-size:16px;font-weight:700;color:var(--tp)">—</div>
+          </div>
+          <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+            <div style="font-size:10px;color:var(--ts);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Valorização</div>
+            <div id="vf_im_valorizacao" style="font-size:16px;font-weight:700;color:var(--succ)">—</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;background:rgba(52,199,123,.08);border:1px solid rgba(52,199,123,.3);border-radius:10px;padding:16px 18px">
+          <div style="font-size:10px;color:var(--ts);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Valor futuro do imóvel</div>
+          <div id="vf_im_futuro" style="font-size:22px;font-weight:700;color:var(--gold)">—</div>
+        </div>
+        <div id="vf_im_note" style="margin-top:12px;font-size:11px;color:var(--ts);background:rgba(255,193,7,.06);border:1px solid rgba(255,193,7,.2);border-radius:8px;padding:10px 14px;line-height:1.6"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     LINKS ÚTEIS
+══════════════════════════════════ -->
+<div id="page-links" class="page">
+  <div class="pt">Links Úteis</div>
+  <p class="ps">Ferramentas e referências externas para apoiar sua simulação.</p>
+
+  <div class="links-page-grid">
+
+    <a href="https://www.bcb.gov.br/meubc/calculadoradocidadao" target="_blank" rel="noopener" class="lp-item">
+      <span class="lp-icon">🧮</span>
+      <div class="lp-info">
+        <div class="lp-title">Calculadora do Cidadão — BCB</div>
+        <div class="lp-desc">Corrija valores, calcule financiamentos, rendimentos e conversão de taxas</div>
+      </div>
+      <span class="lp-arrow">↗</span>
+    </a>
+
+    <a href="https://www.bcb.gov.br/estatisticas/txjuros" target="_blank" rel="noopener" class="lp-item">
+      <span class="lp-icon">📈</span>
+      <div class="lp-info">
+        <div class="lp-title">Taxas de Juros — BCB</div>
+        <div class="lp-desc">Taxas médias de crédito por modalidade e instituição financeira</div>
+      </div>
+      <span class="lp-arrow">↗</span>
+    </a>
+
+    <a href="https://veiculos.fipe.org.br/" target="_blank" rel="noopener" class="lp-item">
+      <span class="lp-icon">🚗</span>
+      <div class="lp-info">
+        <div class="lp-title">Tabela FIPE — FIPE</div>
+        <div class="lp-desc">Valor de mercado de veículos por modelo, ano e combustível</div>
+      </div>
+      <span class="lp-arrow">↗</span>
+    </a>
+
+    <a href="https://portal.fgv.br/indices-economicos" target="_blank" rel="noopener" class="lp-item">
+      <span class="lp-icon">📊</span>
+      <div class="lp-info">
+        <div class="lp-title">Índices Econômicos — FGV</div>
+        <div class="lp-desc">IGP-M, INCC, IPC e demais índices da Fundação Getulio Vargas</div>
+      </div>
+      <span class="lp-arrow">↗</span>
+    </a>
+
+  </div>
+
+  <div style="margin-top:24px;font-size:10px;line-height:1.8;color:var(--ts);opacity:.75;padding-bottom:24px">
+    Os links acima são de fontes externas e podem estar sujeitos a alterações. Acesse sempre as fontes oficiais para informações atualizadas.
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     CAPITAL DE GIRO
+══════════════════════════════════ -->
+<div id="page-cg" class="page">
+  <div class="pt">Capital de Giro</div>
+  <p class="ps">Simule crédito PJ por PRICE ou SAC. Prazo máximo de 60 meses.</p>
+
+  <div class="rstrip">
+    <div class="rc">
+      <label>Taxa pós-fixada (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="cg_rf" value="20,00" step="0.1"  onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="urm('cg_rf','cg_rf_m');calcCG()">
+        <span class="rm" id="cg_rf_m">≈1,53% a.m.</span>
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('fin')">↻ BCB</span>
+    </div>
+    <div class="rc">
+      <label>Taxa prefixada (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="cg_rf_pre" value="26,00" step="0.1"  onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="urm('cg_rf_pre','cg_rf_pre_m');calcCG()">
+        <span class="rm" id="cg_rf_pre_m">≈1,94% a.m.</span>
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('fin')">↻ BCB</span>
+    </div>
+    <div class="rc">
+      <label>IPCA (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="cg_ipca" value="3,81" step="0.1" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="calcCG()">
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('ipca')">↻ BCB</span>
+    </div>
+    <div class="rc">
+      <label>Selic (a.a.%)</label>
+      <div class="rrow">
+        <input type="text" inputmode="decimal" id="cg_rs" value="14,75" step="0.1"  onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="urm('cg_rs','cg_rs_m');calcCG()">
+        <span class="rm" id="cg_rs_m">≈1,15% a.m.</span>
+      </div>
+      <span class="api-badge" onclick="fetchBCBRate('selic')">↻ BCB</span>
+    </div>
+    <div style="flex-basis:100%;margin-top:8px">
+      <div class="rate-note">⚠ Taxa sujeita à análise de perfil do cliente — o valor indicado é uma referência de mercado e pode não corresponder à realidade. Edite o campo para simular outros valores.</div>
+    </div>
+  </div>
+
+  <input type="hidden" id="cg_sis" value="PRICE">
+  <input type="hidden" id="cg_cor" value="NENHUMA">
+  <input type="hidden" id="cg_pr" value="60">
+
+  <div class="fg2">
+    <div class="f">
+      <label>Valor do Crédito (R$)</label>
+      <input type="text" id="cg_val" value="R$ 100.000,00" onfocus="currencyFocus(this)" onkeydown="currencyKeydown(this,event,calcCG)" onblur="maskCurrency(this);calcCG()">
+    </div>
+    <div class="f">
+      <label>Prazo (meses)</label>
+      <input type="number" id="cg_pr_input" value="60" min="6" max="60" step="1" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="if(this.value>60)this.value=60;if(this.value<1)this.value=1;g('cg_pr').value=this.value;calcCG()">
+      <div class="hint">Máximo 60 meses</div>
+    </div>
+  </div>
+
+  <button class="btn btn-sec" onclick="calcCG()">⟶ Simular Capital de Giro</button>
+
+  <div class="card" id="cg-ajustes" style="margin-top:18px;display:none">
+    <div class="ct">Ajustes da Simulação</div>
+    <div class="fg2">
+      <div class="f">
+        <label>Prazo</label>
+        <select id="cg_pr_global" onchange="g('cg_pr').value=this.value;g('cg_pr_input').value=this.value;calcCG()">
+          <option value="6">6 meses</option>
+          <option value="12">12 meses — 1 ano</option>
+          <option value="18">18 meses</option>
+          <option value="24">24 meses — 2 anos</option>
+          <option value="36">36 meses — 3 anos</option>
+          <option value="48">48 meses — 4 anos</option>
+          <option value="60" selected>60 meses — 5 anos</option>
+        </select>
+      </div>
+      <div class="f">
+        <label>Correção Monetária</label>
+        <select id="cg_cor_global" onchange="g('cg_cor').value=this.value;calcCG()">
+          <option value="NENHUMA" selected>Desativada</option>
+          <option value="IPCA">IPCA</option>
+        </select>
+        <div class="hint">Capital de giro usa somente IPCA quando houver correção.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="res-cg" class="ra"></div>
+
+  <div style="margin-top:18px;font-size:10px;line-height:1.8;color:var(--ts);opacity:.75;padding-bottom:24px">
+    Os resultados apresentados consistem em uma simulação e não valem como proposta.<br>
+    Comparativo realizado com base nas informações declaradas durante o processo de simulação.<br>
+    Todos os valores de parcelas e taxas apresentados estão sujeitos a alterações conforme análise de crédito e condições praticadas pelas instituições financeiras.
+  </div>
+</div>
+
+
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+// ══════════════════════════
+// UTILS
+// ══════════════════════════
+const R = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2});
+const N = (v,d=2) => isNaN(v)?'--':v.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const toM = a => Math.pow(1+a/100,1/12)-1;
+const g = id => document.getElementById(id);
+
+// Parse field → number (handles R$ 1.000,00 and plain 12.95)
+function gv(id){
+  const el=g(id); if(!el) return 0;
+  const v=el.value.trim();
+  if(v.includes('R$') || (v.includes(',') && v.replace(/[^,]/g,'').length===1)){
+    // currency format: remove R$, spaces, dots-as-thousands, convert comma to dot
+    return parseFloat(v.replace(/[R$\s]/g,'').replace(/\./g,'').replace(',','.'))||0;
+  }
+  return parseFloat(v)||0;
+}
+
+// Currency mask: formats as R$ 1.000,00 on blur/enter
+function maskCurrency(el){
+  let v = el.value.trim();
+  if(!v){ el.value=''; return; }
+  // parse any format: raw number, or already formatted
+  let raw = v.replace(/[R$\s]/g,'').replace(/\./g,'').replace(',','.');
+  let num = parseFloat(raw) || 0;
+  el.value = num.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2});
+}
+
+function currencyFocus(el){
+  // show raw number so user can type freely
+  let v = el.value.trim();
+  let raw = v.replace(/[R$\s.]/g,'').replace(',','.');
+  let num = parseFloat(raw) || 0;
+  el.value = num > 0 ? String(num) : '';
+  el.select();
+}
+
+function currencyKeydown(el, event, callback){
+  if(event.key === 'Enter'){
+    event.preventDefault();
+    el.blur();
+    if(callback) setTimeout(callback, 0);
+  }
+}
+
+function formatCurrency(el){ maskCurrency(el); }
+
+// Atualiza display "≈ X% a.m." ao lado de uma taxa anual
+function urm(inputId, targetId){
+  const a=gv(inputId);
+  const m=toM(a)*100;
+  const el=g(targetId);
+  if(el) el.textContent=`≈${N(m,2)}% a.m.`;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// TABELAS DE CONSÓRCIO — ATUALIZE AQUI QUANDO A ADMINISTRADORA MUDAR
+// ════════════════════════════════════════════════════════════════════
+// Cada tabela tem:
+//   faixaCarta:  [min, max]  → faixa de valores de carta atendida
+//   adm:         número fixo (ex: 0.20) OU objeto {prazo: taxa} quando varia
+//   fundo, antecipada:  percentuais sobre a carta
+//   correcao:    'INCC' | 'IPCA'
+//   lanceEmbPct: limite de lance embutido (geralmente 0.25)
+//   cartas:      lista de valores de carta vendidos (só veículo)
+//   prazos:      {convencional:[...], mpm25:[...], mpm50:[...]}
+//   mpmMaxPrazo: se MPM tem teto de prazo (BA: 60m)
+const TABELAS_CONSORCIO = {
+  imovel: {
+    BI1: {
+      faixaCarta: [0, 240000],
+      cartas: [100000,110000,120000,130000,150000,170000,180000,200000,220000,230000,240000],
+      adm: 0.23, fundo: 0.02, antecipada: 0.01,
+      correcao: 'INCC', lanceEmbPct: 0.25,
+      prazos: {
+        convencional: [36,50,60,70,85,100,120,135,150,165,180],
+        mpm25:        [36,50,60,70,85,100,120,135,150],
+        mpm50:        []
+      }
+    },
+    BI2: {
+      faixaCarta: [240000, 1200000],
+      cartas: [250000,280000,300000,330000,350000,380000,400000,430000,450000,500000,
+               600000,650000,700000,750000,800000,850000,900000,950000,1000000,1200000],
+      adm: 0.20, fundo: 0.02, antecipada: 0.01,
+      correcao: 'INCC', lanceEmbPct: 0.25,
+      prazos: {
+        convencional: [36,50,60,70,85,100,120,135,150,165,180],
+        mpm25:        [36,50,60,70,85,100,120,135,150],
+        mpm50:        []
+      }
+    },
+    PSE: {
+      faixaCarta: [120000, 600000],
+      cartas: [120000,130000,140000,150000,200000,220000,230000,240000,300000,330000,
+               350000,380000,400000,430000,450000,480000,500000,530000,550000,580000,600000],
+      adm: {200: 0.18, 220: 0.19, 240: 0.20},
+      fundo: 0.02, antecipada: 0.02,
+      correcao: 'INCC', lanceEmbPct: 0.25,
+      prazos: {
+        convencional: [200,220,240],
+        mpm25:        [200,220,240],
+        mpm50:        [200,220,240]
+      }
+    },
+    SEP: {
+      faixaCarta: [600000, 1200000],
+      cartas: [600000,650000,680000,700000,750000,780000,800000,850000,880000,900000,
+               950000,980000,1000000,1200000],
+      adm: {200: 0.16, 220: 0.17, 240: 0.18},
+      fundo: 0.02, antecipada: 0.02,
+      correcao: 'INCC', lanceEmbPct: 0.25,
+      prazos: {
+        convencional: [200,220,240],
+        mpm25:        [200,220,240],
+        mpm50:        [200,220,240]
+      }
+    },
+    'SEP-2M': {
+      faixaCarta: [1000000, 2000000],
+      cartas: [1000000,1100000,1200000,1300000,1400000,1500000,1600000,1700000,
+               1800000,1900000,2000000],
+      adm: {200: 0.16, 220: 0.17, 240: 0.18},
+      fundo: 0.02, antecipada: 0.02,
+      correcao: 'INCC', lanceEmbPct: 0.25,
+      prazos: {
+        convencional: [200,220,240],
+        mpm25:        [200,220,240],
+        mpm50:        [200,220,240]
+      }
+    }
+  },
+  veiculo: {
+    BA: {
+      tipo: 'auto',
+      cartas: [45000,50000,55000,60000,65000,70000,75000,80000,85000,90000,100000,110000,120000,130000,140000,150000,160000,170000,180000],
+      adm: 0.20, fundo: 0.03, antecipada: 0,
+      correcao: 'IPCA', lanceEmbPct: 0.25,
+      mpmMaxPrazo: 60,
+      prazos: {
+        convencional: [36,50,60,70,80],
+        mpm25:        [36,50,60],
+        mpm50:        []
+      }
+    },
+    ASE: {
+      tipo: 'auto',
+      cartas: [45000,50000,55000,60000,65000,70000,75000,80000,85000,90000,100000,110000,120000,130000,140000,150000,160000,170000,180000],
+      adm: {90: 0.13, 100: 0.14},
+      fundo: 0.03, antecipada: 0.02,
+      correcao: 'IPCA', lanceEmbPct: 0.25,
+      prazos: {
+        convencional: [90,100],
+        mpm25:        [90,100],
+        mpm50:        [90,100]
+      }
+    },
+    MB: {
+      tipo: 'moto',
+      cartas: [15000,16000,17000,18000,19000,20000,21000,22000,23000,24000,25000,26000,27000,28000,29000,30000],
+      adm: 0.20, fundo: 0.05, antecipada: 0,
+      correcao: 'IPCA', lanceEmbPct: 0.25,
+      prazos: {
+        convencional: [36,50,60,70],
+        mpm25:        [],
+        mpm50:        []
+      }
+    },
+    SP: {
+      tipo: 'pesado',
+      cartas: [200000,250000,280000,300000,320000,350000,360000,370000,380000,390000,400000,500000,550000,600000,650000,700000],
+      adm: 0.12, fundo: 0.03, antecipada: 0.02,
+      correcao: 'IPCA', lanceEmbPct: 0.25,
+      prazos: {
+        convencional: [36,50,60,70,85,100],
+        mpm25:        [36,50,60,70,85,100],
+        mpm50:        [36,50,60,70,85,100]
+      }
+    }
+  }
+};
+
+// Helpers de lookup. Devolvem a tabela + uma "view" pronta pra cálculo
+// (com adm já resolvida para o prazo escolhido).
+
+// Imóvel: decide pela combinação carta + prazo
+function getTabelaImovel(carta, prazo){
+  const t = TABELAS_CONSORCIO.imovel;
+  let key;
+  if(prazo <= 180){
+    key = carta <= 240000 ? 'BI1' : 'BI2';
+  } else {
+    if(carta <= 600000) key = 'PSE';
+    else if(carta <= 1200000) key = 'SEP';
+    else key = 'SEP-2M';
+  }
+  return _resolveTabela(t[key], key, prazo);
+}
+
+// Veículo: decide pela combinação tipo + prazo (autos: BA até 80m, ASE de 90m)
+function getTabelaVeiculo(tipo, carta, prazo){
+  const t = TABELAS_CONSORCIO.veiculo;
+  let key;
+  if(tipo === 'moto')   key = 'MB';
+  else if(tipo === 'pesado') key = 'SP';
+  else key = prazo >= 90 ? 'ASE' : 'BA';
+  return _resolveTabela(t[key], key, prazo);
+}
+
+// Resolve a adm (que pode ser objeto {prazo:taxa}) e devolve no formato
+// esperado pelo cálculo: {tabela, taxaAdm, fundo, antecipada, correcao,
+// lanceEmbPct, mpm:[...], prazos:[...], mpmMaxPrazo?}
+function _resolveTabela(cfg, key, prazo){
+  if(!cfg) return null;
+  const adm = (typeof cfg.adm === 'object') ? (cfg.adm[prazo] || Object.values(cfg.adm)[0]) : cfg.adm;
+  // Lista MPM permitidos: 0 sempre; 0.25 se prazos.mpm25 não está vazio; 0.50 idem.
+  const mpm = [0];
+  if(cfg.prazos.mpm25.length) mpm.push(0.25);
+  if(cfg.prazos.mpm50.length) mpm.push(0.50);
+  return {
+    tabela: key,
+    taxaAdm: adm,
+    fundo: cfg.fundo,
+    antecipada: cfg.antecipada,
+    correcao: cfg.correcao,
+    lanceEmbPct: cfg.lanceEmbPct,
+    mpm,
+    prazos: cfg.prazos.convencional,  // lista padrão pra UI
+    prazosPorMpm: cfg.prazos,         // lista completa por MPM
+    cartas: cfg.cartas,
+    mpmMaxPrazo: cfg.mpmMaxPrazo
+  };
+}
+
+// ════════════════════════════════════════════════════════════════════
+
+// ══════════════════════════
+// NAVIGATION
+// ══════════════════════════
+function gp(id,el){
+  if(id==='juros') setTimeout(initJuros,0);
+  if(id==='vf') setTimeout(calcVF,0);
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  g('page-'+id).classList.add('active');
+  if(el)el.classList.add('active');
+}
+
+// ══════════════════════════
+// CORREÇÃO GLOBAL
+// ══════════════════════════
+let correcaoAtiva = false;
+function setCorrecaoGlobal(ativo, btn){
+  correcaoAtiva = ativo;
+  document.querySelectorAll('.tg-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  // atualiza select de correção do financiamento
+  if(!ativo){
+    g('im_cor').value='NENHUMA';
+  } else {
+    if(g('im_sis').value!=='PREFIXADA') g('im_cor').value='TR';
+  }
+}
+function toggleCorrecao(){
+  const sisEl = g('im_sis_r')||g('im_sis');
+  const corEl = g('im_cor_r')||g('im_cor');
+  const cf=g('cor_field');
+  if(!cf) return;
+  if(sisEl&&sisEl.value==='PREFIXADA'){
+    cf.style.opacity='.4';cf.style.pointerEvents='none';
+    if(corEl) corEl.value='NENHUMA';
+  } else {
+    cf.style.opacity='1';cf.style.pointerEvents='auto';
+  }
+}
+function syncSis(){ const el=g('im_sis_r'); if(el) g('im_sis').value=el.value; }
+function syncCor(){ const el=g('im_cor_r'); if(el) g('im_cor').value=el.value; }
+function syncContemp(){ const el=g('im_contemp_r'); if(el) g('im_contemp').value=el.value; }
+function syncContempVeiculo(){ const el=g('ve_contemp_r'); if(el) g('ve_contemp').value=el.value; }
+function syncLance(){ const el=g('im_lance_r'); if(el) g('im_lance_proprio').value=gv('im_lance_r'); }
+
+// Wrapper de compatibilidade — usa TABELAS_CONSORCIO.imovel.
+function getPrazosConsorcio(cartaVal, mpmPct, prazoRef=240){
+  const tab = getTabelaImovel(cartaVal, prazoRef);
+  if(!tab) return [];
+  if(mpmPct === 0.50) return tab.prazosPorMpm.mpm50;
+  if(mpmPct === 0.25) return tab.prazosPorMpm.mpm25;
+  return tab.prazosPorMpm.convencional;
+}
+
+function getMpmAtual(){
+  const mpmEl = g('im_mpm_r');
+  if(mpmEl) return parseFloat(mpmEl.value)||0;
+  window.mpmGlobal = window.mpmGlobal ?? 0;
+  window.mpmGlobalAluguel = window.mpmGlobalAluguel ?? 0.50;
+  window.mpmGlobalVeiculo = window.mpmGlobalVeiculo ?? 0;
+  return window.mpmGlobal;
+}
+
+function prazoAjustadoPorPlano(prazo, mpmPct){
+  // Equivalente à regra do Excel:
+  // =SES(
+  //   plano="Mais por menos 50%"; SE(prazo<200;1;0);
+  //   plano="Mais por menos 25%"; SE(prazo>150;SE(prazo<200;1;0);0);
+  //   plano="Convencional"; 0
+  // )
+  if(mpmPct === 0.50 && prazo < 200) return 200;
+  if(mpmPct === 0.25 && prazo > 150 && prazo < 200) return 150;
+  return prazo;
+}
+
+function updatePrazosGlobais(){
+  const sel = g('im_pr_global');
+  if(!sel) return;
+
+  const todosPrazos = [36,50,60,70,85,100,120,135,150,165,180,200,220,240,300,360,420];
+  const mpm = getMpmAtual();
+  const prazoAtual = parseInt(sel.value)||parseInt(g('im_pr').value)||240;
+  const prazoFinal = prazoAjustadoPorPlano(prazoAtual, mpm);
+
+  sel.innerHTML = todosPrazos.map(p=>{
+    let aviso = '';
+    if(mpm === 0.25 && p > 150 && p < 200) aviso = ' • ajusta para 150 no MPM 25%';
+    if(mpm === 0.50 && p < 200) aviso = ' • ajusta para 200 no MPM 50%';
+    if(p > 240) aviso = ' • só financiamento';
+    return `<option value="${p}" ${p===prazoFinal?'selected':''}>${p} meses — ${N(p/12,1)} anos${aviso}</option>`;
+  }).join('');
+
+  g('im_pr').value = String(prazoFinal);
+}
+
+function syncPrazoGlobal(){
+  const sel = g('im_pr_global');
+  if(sel) g('im_pr').value = sel.value;
+}
+
+function syncCorrecaoGlobal(){
+  const sel = g('im_cor_global');
+  const valor = sel ? sel.value : 'off';
+  correcaoAtiva = valor !== 'off';
+
+  const cor = g('im_cor');
+  const sis = g('im_sis');
+
+  if(cor){
+    if(!correcaoAtiva || (sis && sis.value === 'PREFIXADA')) {
+      cor.value = 'NENHUMA';
+    } else {
+      cor.value = valor; // TR ou IPCA para financiamento
+    }
+  }
+}
+
+// ══════════════════════════
+// BCB API
+// ══════════════════════════
+async function fetchBCBRate(tipo){
+  if(tipo === 'selic'){
+    try{
+      const r = await fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados/ultimos/1?formato=json');
+      const d = await r.json();
+      const val = parseFloat(d[0].valor.replace(',','.'));
+      const formatted = val.toFixed(2).replace('.',',');
+      // Preenche todos os campos de Selic visíveis
+      ['im_rs','ve_rs','al_rs','he_rs','cg_rs'].forEach(id => {
+        const el = g(id); if(el) el.value = formatted;
+      });
+      // Atualiza displays ≈% a.m.
+      ['im_rs','ve_rs','al_rs','he_rs','cg_rs'].forEach(id => {
+        const mId = id + '_m'; if(g(id) && g(mId)) urm(id, mId);
+      });
+      if(g('im_rs')) calcImovel();
+      if(g('ve_rs')) calcVeiculo();
+      if(g('he_rs')) calcHE();
+      if(g('cg_rs')) calcCG();
+      return;
+    } catch(e){ /* fallback para Google */ }
+  }
+  if(tipo === 'ipca'){
+    try{
+      const r = await fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.13522/dados/ultimos/1?formato=json');
+      const d = await r.json();
+      const val = parseFloat(d[0].valor.replace(',','.'));
+      const formatted = val.toFixed(2).replace('.',',');
+      ['im_ipca','ve_ipca','al_ipca','he_ipca','ae_ipca','cg_ipca','qt_corr'].forEach(id => {
+        const el = g(id); if(el) el.value = formatted;
+      });
+      if(g('im_ipca')) calcImovel();
+      if(g('ve_ipca')) calcVeiculo();
+      if(g('he_ipca')) calcHE();
+      if(g('ae_ipca')) calcAE();
+      if(g('cg_ipca')) calcCG();
+      if(g('qt_corr') && g('qt_cor_tipo') && g('qt_cor_tipo').value==='IPCA') { urm('qt_corr','qt_corr_m'); calcQuitacao(); }
+      return;
+    } catch(e){ /* fallback */ }
+  }
+  if(tipo === 'tr'){
+    try{
+      const r = await fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.226/dados/ultimos/1?formato=json');
+      const d = await r.json();
+      const trMensal = parseFloat(d[0].valor.replace(',','.'));
+      const trAnual = (Math.pow(1 + trMensal/100, 12) - 1) * 100;
+      const formatted = trAnual.toFixed(2).replace('.',',');
+      ['im_tr','al_tr','qt_corr'].forEach(id => {
+        const el = g(id); if(el) el.value = formatted;
+      });
+      if(g('im_tr')) calcImovel();
+      if(g('qt_corr') && g('qt_cor_tipo') && g('qt_cor_tipo').value==='TR') { urm('qt_corr','qt_corr_m'); calcQuitacao(); }
+      return;
+    } catch(e){ /* fallback */ }
+  }
+  if(tipo === 'igpm'){
+    window.open('https://www.google.com/search?q=IGP-M+acumulado+12+meses+FGV', '_blank');
+    return;
+  }
+  const links={
+    incc:`https://www.google.com/search?q=INCC+mensal+atualizado+FGV`,
+    igpm:`https://www.google.com/search?q=IGP-M+acumulado+12+meses+FGV`,
+    fin:`https://www.google.com/search?q=taxa+media+financiamento+imobiliario+banco+central`,
+    finveiculo:`https://www.google.com/search?q=taxa+media+financiamento+veiculos+banco+central`,
+  };
+  if(links[tipo]) window.open(links[tipo],'_blank');
+}
+
+async function fetchSelicVF(){
+  try{
+    const r = await fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados/ultimos/1?formato=json');
+    const d = await r.json();
+    const val = parseFloat(d[0].valor.replace(',','.'));
+    g('vf_selic').value = val.toFixed(2).replace('.',',');
+    calcVF();
+  } catch(e){
+    alert('Não foi possível buscar a Selic. Verifique sua conexão.');
+  }
+}
+
+function calcVF(){
+  const ini   = gv('vf_ini');
+  const ap    = gv('vf_ap');
+  if(!ini && !ap) return;
+  const prazo = Math.max(1, Math.round(parseFloat((g('vf_prazo').value||'1').replace(',','.'))||1));
+  const selicA= parseFloat((g('vf_selic').value||'0').replace(',','.'))||0;
+  const tM    = toM(selicA);
+
+  let saldo = ini;
+  for(let i = 0; i < prazo; i++) saldo = saldo * (1 + tM) + ap;
+
+  const totalInv  = ini + ap * prazo;
+  const rend      = saldo - totalInv;
+  const dias      = prazo * 30;
+  const aliq      = dias <= 180 ? 0.225 : dias <= 360 ? 0.200 : dias <= 720 ? 0.175 : 0.150;
+  const aliqPct   = (aliq * 100).toFixed(1).replace('.',',');
+  const ir        = rend * aliq;
+  const liquido   = saldo - ir;
+
+  g('vf_out_investido').textContent  = R(totalInv);
+  g('vf_out_rendimento').textContent = R(rend);
+  g('vf_out_bruto').textContent      = R(saldo);
+  g('vf_out_ir').textContent         = '− ' + R(ir);
+  g('vf_out_liquido').textContent    = R(liquido);
+  g('vf_ir_note').innerHTML = `Prazo de ${prazo} meses (${N(prazo/12,1)} anos) → alíquota de <b>${aliqPct}%</b> de IR sobre os rendimentos de ${R(rend)}.`;
+  g('vf_result_card').style.display  = 'block';
+}
+
+function vfToggle(id){
+  document.getElementById(id).classList.toggle('closed');
+}
+
+function calcVFImovel(){
+  const val  = gv('vf_imovel');
+  if(!val) return;
+  const taxa  = parseFloat((g('vf_incc').value||'0').replace(',','.'))||0;
+  const prazo = Math.max(1, Math.round(parseFloat((g('vf_prazo_im').value||'1').replace(',','.'))||1));
+  const tM    = toM(taxa);
+  const futuro = val * Math.pow(1+tM, prazo);
+  const valorizacao = futuro - val;
+  const pct = (valorizacao/val*100).toFixed(1).replace('.',',');
+  g('vf_im_atual').textContent       = R(val);
+  g('vf_im_valorizacao').textContent = '+' + R(valorizacao);
+  g('vf_im_futuro').textContent      = R(futuro);
+  g('vf_im_note').innerHTML = `Em ${prazo} meses (${N(prazo/12,1)} anos) com ${N(taxa,2)}% a.a. — valorização de <b>${pct}%</b>.`;
+  g('vf_imovel_result').style.display='block';
+}
+
+// ══════════════════════════
+// TABELAS CONSÓRCIO REAIS
+// ══════════════════════════
+
+// Seleciona tabela e taxa por valor da carta e prazo
+// Wrapper de compatibilidade — consulta TABELAS_CONSORCIO.
+// (Ver objeto TABELAS_CONSORCIO no topo do script para alterar regras.)
+function getConsorcioConfig(cartaVal, prazo){
+  return getTabelaImovel(cartaVal, prazo);
+}
+
+// Arredonda carta de imóvel para próximo valor da lista oficial da tabela.
+// `creditoDesejado` é o valor que o cliente quer receber líquido.
+// Com lance embutido X%, precisa de carta maior: cartaMin = credito / (1-X).
+// Sem lance embutido (X=0), carta = crédito desejado.
+function arredondaCarta(creditoDesejado, prazo=240, lanceEmbPct=0.25){
+  const cartaMin = lanceEmbPct > 0 ? creditoDesejado / (1 - lanceEmbPct) : creditoDesejado;
+  const tab = getTabelaImovel(cartaMin, prazo);
+  if(!tab || !tab.cartas || !tab.cartas.length){
+    // fallback: arredonda pra 10k mais próximo acima
+    return Math.ceil(cartaMin / 10000) * 10000;
+  }
+  // Próxima carta da lista que atenda; se nenhuma atende, pega a maior.
+  return tab.cartas.find(c => c >= cartaMin) || tab.cartas[tab.cartas.length - 1];
+}
+
+// Calcula parcelas do consórcio de imóvel.
+// creditoDesejado: valor líquido que o cliente quer receber
+// lanceEmbPct: 0.25 (padrão) ou 0 (sem lance embutido — carta = crédito)
+function calcConsorcio(creditoDesejado, prazo, maispormenosPct, lanceProprioVal, contemp, inccAnual, aplicarCorrecao, lanceEmbPct=0.25){
+  const carta = arredondaCarta(creditoDesejado, prazo, lanceEmbPct);
+  const cfg = getConsorcioConfig(carta, prazo);
+  const lanceEmbutido = carta * lanceEmbPct;
+  const lanceProprio = lanceProprioVal || 0;
+  const lanceTotal = lanceEmbutido + lanceProprio;
+  const creditoLiquido = carta - lanceEmbutido;
+
+  // Valores do plano conforme lógica da planilha
+  const valorTaxaAdm = carta * cfg.taxaAdm;
+  const valorFundo = carta * cfg.fundo;
+  const valorAntecipada = carta * cfg.antecipada;
+
+  // Base total do plano usada para saldo pós-contemplação.
+  // No Excel, a taxa antecipada entra no total do plano e também é cobrada na 1ª parcela.
+  const baseTotalPlano = carta + valorTaxaAdm + valorFundo + valorAntecipada;
+
+  let parcelaPre;
+
+  if(maispormenosPct === 0.50){
+    parcelaPre = ((0.50 * carta) + valorTaxaAdm + (cfg.fundo * (0.50 * carta))) / prazo;
+  } else if(maispormenosPct === 0.25){
+    parcelaPre = ((0.75 * carta) + valorTaxaAdm + (cfg.fundo * (0.75 * carta))) / prazo;
+  } else {
+    parcelaPre = (carta + valorTaxaAdm + valorFundo) / prazo;
+  }
+
+  const parcelaBase = (carta + valorTaxaAdm + valorFundo) / prazo;
+
+  // 1ª parcela = parcela pré + taxa antecipada
+  const p1 = parcelaPre + valorAntecipada;
+
+  // Saldo antes do lance, conforme lógica do Excel:
+  // saldo = base total do plano - 1ª parcela - demais parcelas pagas até contemplação
+  const parcelasPrePagas = p1 + (Math.max(0, contemp - 1) * parcelaPre);
+  const saldoAntesLance = Math.max(0, baseTotalPlano - parcelasPrePagas);
+  const saldoPosContemp = Math.max(0, saldoAntesLance - lanceTotal);
+  const prazoPosOriginal = Math.max(1, prazo - contemp);
+
+  const parcelaMinimaPos = baseTotalPlano * 0.005;
+  let prazoPos;
+  let parcelaPos;
+
+  if(maispormenosPct > 0){
+    const parcelaLinear = saldoPosContemp / prazoPosOriginal;
+    if(parcelaLinear > parcelaMinimaPos){
+      prazoPos = prazoPosOriginal;
+      parcelaPos = parcelaLinear;
+    } else {
+      prazoPos = Math.max(1, Math.floor(saldoPosContemp / parcelaMinimaPos));
+      parcelaPos = saldoPosContemp / prazoPos;
+    }
+  } else {
+    prazoPos = prazoPosOriginal;
+    parcelaPos = saldoPosContemp / prazoPos;
+  }
+
+  // Gerar rows.
+  // Correção monetária do consórcio segue a lógica da planilha:
+  // ela não aumenta o saldo devedor base. Ela gera um acréscimo separado na parcela.
+  let rows = [];
+  let saldoAtual = baseTotalPlano;
+  let prazoEfetivo = contemp + prazoPos;
+  const corrM = toM(inccAnual);
+  let correcaoAcumulada = 0;
+
+  for(let i=1; i<=prazoEfetivo; i++){
+    let pBase, obs = '', fase;
+
+    if(i < contemp){
+      pBase = i === 1 ? p1 : parcelaPre;
+      saldoAtual = Math.max(0, saldoAtual - pBase);
+      fase = 'Pré';
+    } else if(i === contemp){
+      pBase = i === 1 ? p1 : parcelaPre;
+      saldoAtual = Math.max(0, saldoAtual - pBase - lanceTotal);
+      obs = `Contemplação · Lance ${R(lanceTotal)}`;
+      fase = 'Contempl.';
+    } else {
+      pBase = parcelaPos;
+      saldoAtual = Math.max(0, saldoAtual - pBase);
+      fase = 'Pós';
+    }
+
+    const fatorCorrecao = aplicarCorrecao ? Math.pow(1 + corrM, i - 1) : 1;
+    const pCorrigida = pBase * fatorCorrecao;
+    const reajusteParcela = aplicarCorrecao ? Math.max(0, pCorrigida - pBase) : 0;
+    correcaoAcumulada += reajusteParcela;
+
+    rows.push({
+      mes:i,
+      p:pCorrigida,
+      pBase,
+      reajuste:reajusteParcela,
+      reajusteAcum:correcaoAcumulada,
+      sd:saldoAtual,
+      obs,
+      fase
+    });
+  }
+
+  const totalPago = rows.reduce((s,r)=>s+r.p, 0);
+  const cetAnual = calcCETconsFluxo(totalPago, creditoLiquido, prazoEfetivo, lanceProprio);
+
+  return{
+    carta, creditoLiquido, lanceEmbutido, lanceProprio, lanceTotal,
+    p1, parcelaPre, parcelaPos,
+    totalPago, cfg, rows,
+    cetAnual,
+    prazoPos, prazoEfetivo, baseTotalPlano
+  };
+}
+
+// ══════════════════════════
+// AMORTIZAÇÃO
+// ══════════════════════════
+function calcSAC(cr,tM,n,corrAnual=0,seg=100,tf=25){
+  let sd=cr,rows=[];
+  const corrM=toM(corrAnual);
+  for(let i=1;i<=n;i++){
+    if(corrAnual>0&&i>1&&(i-1)%12===0) sd=sd*(1+corrAnual/100);
+    const am=sd/(n-i+1);
+    const j=sd*tM;
+    rows.push({mes:i,p:am+j+seg+tf,j,am,sd});
+    sd=Math.max(0,sd-am);
+  }
+  return rows;
+}
+function calcPRICE(cr,tM,n,corrAnual=0,seg=100,tf=25){
+  let sd=cr,rows=[];
+  for(let i=1;i<=n;i++){
+    if(corrAnual>0&&i>1&&(i-1)%12===0) sd=sd*(1+corrAnual/100);
+    const pmt=sd*(tM*Math.pow(1+tM,n-i+1))/(Math.pow(1+tM,n-i+1)-1);
+    const j=sd*tM;const am=pmt-j;
+    rows.push({mes:i,p:pmt+seg+tf,j,am,sd});
+    sd=Math.max(0,sd-am);
+  }
+  return rows;
+}
+function calcIOFEstimado(credito){
+  const aliquotaEstimativa = 0.0338;
+  return credito * aliquotaEstimativa;
+}
+
+function getFinRows(cr,sis,cor,tM,n,trA,ipcaA){
+  const corrA=cor==='TR'?trA:cor==='IPCA'?ipcaA:0;
+  if(sis==='SAC') return calcSAC(cr,tM,n,corrA);
+  if(sis==='PRICE') return calcPRICE(cr,tM,n,corrA);
+  return calcPRICE(cr,tM,n,0); // prefixada = price sem correção
+}
+
+// CET financiamento — Newton-Raphson para achar taxa mensal que iguala VP das parcelas ao crédito
+function calcCET(rows, cr){
+  const n = rows.length;
+  const pmts = rows.map(r=>r.p);
+  let r = 0.01; // chute inicial
+  for(let iter=0;iter<100;iter++){
+    let f=0, df=0;
+    for(let i=0;i<n;i++){
+      const t=Math.pow(1+r,i+1);
+      f  += pmts[i]/t;
+      df -= (i+1)*pmts[i]/((1+r)*t);
+    }
+    f -= cr;
+    const nr = r - f/df;
+    if(Math.abs(nr-r)<1e-10) break;
+    r = nr;
+  }
+  return (Math.pow(1+r,12)-1)*100; // anualiza
+}
+
+// Custo financeiro estimado do consórcio
+// Fórmula: (totalPago + lanceProprio - creditoLiquido) / creditoLiquido / anos * 100
+// totalPago = soma das parcelas; lanceProprio = desembolso extra na contemplação
+// creditoLiquido = carta - lance embutido (o que o cliente efetivamente recebe)
+function calcCETconsFluxo(totalPago, creditoLiquido, prazoEfetivo, lanceProprio=0){
+  if(!creditoLiquido || creditoLiquido <= 0 || !prazoEfetivo || !totalPago) return NaN;
+  const custo = Math.max(0, totalPago + lanceProprio - creditoLiquido);
+  const anos = prazoEfetivo / 12;
+  return (custo / creditoLiquido / anos) * 100;
+}
+
+// ══════════════════════════
+// TESOURO
+// ══════════════════════════
+function fv(ini,ap,tM,n){let s=ini;for(let i=0;i<n;i++)s=s*(1+tM)+ap;return s;}
+
+function mesesParaAtingir(meta, ini, ap, tM){
+  let s=ini, m=0;
+  while(s<meta && m<600){s=s*(1+tM)+ap;m++;}
+  return m;
+}
+
+// ══════════════════════════
+// PREVIEW CONSÓRCIO
+// ══════════════════════════
+function previewCons(){
+  const val=gv('im_val');
+  // val é o valor que o cliente quer financiar (= crédito líquido desejado).
+  // Lance embutido padrão de 25%.
+  const carta = arredondaCarta(val, 240, 0.25);
+  const cred  = carta * 0.75;  // = carta - lance embutido 25%
+  const cartaEl = g('im_carta_v');
+  const credEl = g('im_cred_v');
+  if(cartaEl) cartaEl.textContent=R(carta);
+  if(credEl) credEl.textContent=R(cred);
+}
+previewCons();
+
+// ══════════════════════════
+// RENDER HELPERS
+// ══════════════════════════
+function buildShow(rows,n){
+  if(n<=12)return rows.map(r=>({r,e:false,h:false}));
+  const out=[];
+  rows.slice(0,6).forEach(r=>out.push({r,e:false,h:false}));
+  rows.slice(6,n-6).forEach(r=>out.push({r,e:false,h:true}));
+  out.push({r:null,e:true,h:false});
+  rows.slice(-6).forEach(r=>out.push({r,e:false,h:false}));
+  return out;
+}
+function expandTable(btn){
+  const tb=btn.closest('tbody');
+  const hidden=tb.querySelectorAll('.exp-row');
+  const opening=hidden[0]&&hidden[0].style.display==='none';
+  hidden.forEach(r=>r.style.display=opening?'':'none');
+  btn.querySelector('td').textContent=opening?'▲ fechar':'•••';
+}
+
+function barH(items){
+  const mx=Math.max(...items.map(i=>i.v));
+  return`<div class="barchart">${items.map(({l,v,c})=>`
+    <div class="brow">
+      <div class="blabel">${l}</div>
+      <div class="btrack"><div class="bfill" style="background:${c}20;color:${c};width:${(v/mx*100).toFixed(1)}%">${R(v)}</div></div>
+    </div>`).join('')}</div>`;
+}
+
+function swTab(btn,id){
+  const area=btn.closest('.ra')||document.body;
+  area.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  area.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  g(id).classList.add('active');
+}
+
+function showR(id){
+  const el=g(id);
+  el.style.display='block';
+  el.classList.add('show');
+}
+
+// ══════════════════════════
+// SVG LINE CHART
+// ══════════════════════════
+function buildChart(canvasId, datasets, labels, titulo, yFmt){
+  const W=800, H=200, PL=60, PR=20, PT=10, PB=30;
+  const allVals=datasets.flatMap(d=>d.data);
+  const yMin=0, yMax=Math.max(...allVals)*1.05;
+  const n=labels.length;
+
+  const xScale=i=>(PL+(i/(n-1))*(W-PL-PR));
+  const yScale=v=>(PT+H-PB-((v-yMin)/(yMax-yMin))*(H-PT-PB));
+
+  // Grid lines
+  const ticks=5;
+  let gridLines='';
+  for(let i=0;i<=ticks;i++){
+    const y=PT+(i/ticks)*(H-PT-PB);
+    const val=yMax-(i/ticks)*(yMax-yMin);
+    gridLines+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="#2E3044" stroke-width="1" stroke-dasharray="4,4"/>`;
+    gridLines+=`<text x="${PL-6}" y="${y+4}" text-anchor="end" fill="#9CA3AF" font-size="9">${yFmt(val)}</text>`;
+  }
+
+  // X labels — every year
+  let xLabels='';
+  const step=Math.ceil(n/12);
+  for(let i=0;i<n;i+=step*12){
+    const x=xScale(i);
+    xLabels+=`<text x="${x}" y="${H-PB+18}" text-anchor="middle" fill="#9CA3AF" font-size="9">${Math.round(i/12)}a</text>`;
+  }
+
+  // Lines and areas
+  let paths='';
+  datasets.forEach(ds=>{
+    const pts=ds.data.map((v,i)=>`${xScale(i)},${yScale(v)}`).join(' ');
+    const first=`${xScale(0)},${yScale(ds.data[0])}`;
+    const last=`${xScale(n-1)},${yScale(ds.data[n-1])}`;
+    // area
+    const areaD=`M${first} L${pts.split(' ').join(' L')} L${xScale(n-1)},${H-PB} L${xScale(0)},${H-PB} Z`;
+    paths+=`<path d="${areaD}" fill="${ds.color}" opacity=".07"/>`;
+    // line
+    paths+=`<polyline points="${pts}" fill="none" stroke="${ds.color}" stroke-width="2" stroke-linejoin="round"/>`;
+    // hover overlay
+    paths+=`<polyline points="${pts}" fill="none" stroke="transparent" stroke-width="16" 
+      onmousemove="chartHover(event,'${ds.label}','${ds.color}',this,${JSON.stringify(ds.data)},${JSON.stringify(labels)})"
+      onmouseleave="g('tooltip').style.display='none'"/>`;
+  });
+
+  return`<div class="chart-wrap">
+    <div class="chart-title">${titulo}
+      <div class="chart-legend">${datasets.map(d=>`<div class="chart-legend-item"><div class="chart-legend-dot" style="background:${d.color}"></div>${d.label}</div>`).join('')}</div>
+    </div>
+    <svg class="chart-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="${W}" height="${H}" fill="none"/>
+      ${gridLines}${xLabels}${paths}
+    </svg>
+  </div>`;
+}
+
+function chartHover(evt,label,color,el,data,labels){
+  const svg=el.closest('svg');
+  const rect=svg.getBoundingClientRect();
+  const svgW=800,PL=60,PR=20;
+  const relX=(evt.clientX-rect.left)*(svgW/rect.width);
+  const n=data.length;
+  const idx=Math.round(((relX-PL)/(svgW-PL-PR))*(n-1));
+  const i=Math.max(0,Math.min(n-1,idx));
+  const tip=g('tooltip');
+  tip.style.display='block';
+  tip.style.left=(evt.clientX+12)+'px';
+  tip.style.top=(evt.clientY-8)+'px';
+  tip.innerHTML=`<b style="color:${color}">${label}</b><br>${labels[i]}: <b>${R(data[i])}</b>`;
+}
+
+// ══════════════════════════
+// TIMELINE
+// ══════════════════════════
+function buildTimeline(pr, contemp, mesesTesouro, valImovel){
+  const totalMeses=Math.max(pr, mesesTesouro||pr, 360);
+  const pct=m=>`${(m/totalMeses*100).toFixed(1)}%`;
+  const anos=[0,5,10,15,20,25,30].filter(a=>a*12<=totalMeses);
+
+  return`<div class="timeline-wrap">
+    <div class="tl-title">Linha do Tempo — Comparativo dos 3 Caminhos</div>
+    <div class="tl-container">
+      <div class="tl-year-labels">
+        ${anos.map(a=>`<span style="position:absolute;left:${pct(a*12)};transform:translateX(-50%)">${a}a</span>`).join('')}
+        <span>&nbsp;</span>
+      </div>
+      
+      <!-- Tesouro -->
+      <div class="tl-track">
+        <div class="tl-track-label">Tesouro Selic</div>
+        <div class="tl-track-inner">
+          <div class="tl-bar" style="left:0;width:${pct(mesesTesouro||pr)};background:linear-gradient(90deg,var(--succ)22,var(--succ)88);border:1px solid var(--succ)44;height:12px">
+          </div>
+          ${mesesTesouro?`<div class="tl-marker" style="left:${pct(mesesTesouro)};background:var(--succ)">
+            <div class="tl-marker-label">Junta o valor (${Math.round(mesesTesouro/12)}a)</div>
+          </div>`:''}
+          <div class="tl-marker" style="left:0;background:var(--succ)">
+            <div class="tl-marker-label">Início</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Financiamento -->
+      <div class="tl-track">
+        <div class="tl-track-label">Financiamento</div>
+        <div class="tl-track-inner">
+          <div class="tl-bar" style="left:0;width:${pct(pr)};background:linear-gradient(90deg,var(--sec)22,var(--sec)88);border:1px solid var(--sec)44;height:12px"></div>
+          <div class="tl-marker" style="left:0;background:var(--sec)">
+            <div class="tl-marker-label">Posse imediata</div>
+          </div>
+          <div class="tl-marker" style="left:${pct(pr)};background:var(--sec)">
+            <div class="tl-marker-label">Quitação (${Math.round(pr/12)}a)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Consórcio -->
+      <div class="tl-track">
+        <div class="tl-track-label">Consórcio</div>
+        <div class="tl-track-inner">
+          <!-- Pré contemplação -->
+          <div class="tl-bar" style="left:0;width:${pct(contemp)};background:linear-gradient(90deg,var(--gold)15,var(--gold)55);border:1px solid var(--gold)33;height:12px"></div>
+          <!-- Pós contemplação -->
+          <div class="tl-bar" style="left:${pct(contemp)};width:${pct(pr-contemp)};background:linear-gradient(90deg,var(--gold)44,var(--gold)99);border:1px solid var(--gold)55;height:12px"></div>
+          <div class="tl-marker" style="left:0;background:var(--gold)">
+            <div class="tl-marker-label">1ª parcela</div>
+          </div>
+          <div class="tl-marker" style="left:${pct(contemp)};background:var(--gold)">
+            <div class="tl-marker-label">Contemplação (${Math.round(contemp/12)}a)</div>
+          </div>
+          <div class="tl-marker" style="left:${pct(pr)};background:var(--gold)">
+            <div class="tl-marker-label">Quitação (${Math.round(pr/12)}a)</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════
+// LINKS
+// ══════════════════════════
+function linksImovel(){
+  const ls=[
+    {i:'🏦',t:'BCB — Taxas de Crédito',d:'Taxas médias por modalidade',u:'https://www.bcb.gov.br/estatisticas/txjuros'},
+    {i:'🏠',t:'BCB — Crédito Imobiliário',d:'Dados do mercado habitacional',u:'https://www.bcb.gov.br/estatisticas/mercadoimobiliario'},
+    {i:'📊',t:'ABECIP — Índices',d:'IGMI-C, IGMI-R, financiamentos',u:'https://www.abecip.org.br/'},
+    {i:'🔎',t:'ABAC — Consórcios',d:'Grupos e administradoras',u:'https://www.abac.org.br/'},
+    {i:'📈',t:'Tesouro Direto — Taxas',d:'Selic, IPCA+, Prefixado',u:'https://www.tesourodireto.com.br/titulos/precos-e-taxas.htm'},
+    {i:'🏛️',t:'BCB — Calculadora',d:'Juros compostos, correção',u:'https://www3.bcb.gov.br/CALCIDADAO/publico/exibirFormCorrecaoValores.do?method=exibirFormCorrecaoValores'},
+  ];
+  return`<div style="margin-top:20px">
+    <div class="ct" style="margin-bottom:10px">↗ Consulte fontes oficiais</div>
+    <div class="lgrid">${ls.map(l=>`<a href="${l.u}" target="_blank" rel="noopener" class="el">
+      <span class="ei">${l.i}</span>
+      <div><div class="et">${l.t}</div><div class="ed">${l.d}</div></div>
+    </a>`).join('')}</div>
+  </div>`;
+}
+
+
+// ══════════════════════════
+// CALC: IMÓVEL
+// ══════════════════════════
+function calcImovel(){
+  const ajustes = g('ajustes-globais');
+  if(ajustes) ajustes.style.display='block';
+  updatePrazosGlobais();
+  syncPrazoGlobal();
+  syncCorrecaoGlobal();
+
+  let val       = gv('im_val');
+  let ent       = gv('im_ent');
+  const pr      = gv('im_pr');
+  const ap      = gv('im_ap');
+  const rf      = gv('im_rf');
+  const tr      = gv('im_tr');
+  const ipca    = gv('im_ipca');
+  const incc    = gv('im_incc');
+  const rs      = gv('im_rs');
+
+  // Lê de campos dos chips se existirem, senão usa hidden
+  const sisEl   = g('im_sis_r')||g('im_sis');
+  const corEl   = g('im_cor_r')||g('im_cor');
+  const contEl  = g('im_contemp_r')||g('im_contemp');
+  const sis     = sisEl.value;
+  const cor     = corEl.value;
+  const contemp = parseInt(contEl.value)||36;
+
+  const MIN_CR_FIN = 80000; // mínimo de crédito imobiliário praticado pelos bancos
+
+  // MODO REVERSO: sem valor do imóvel → derivar capacidade máxima
+  let isReverse = false;
+  if (val === 0 && ap > 0) {
+    isReverse = true;
+    const _tM = sis==='PREFIXADA' ? toM(gv('im_rf_pre')||rf) : toM(rf);
+    let cr_max;
+    if (sis === 'PRICE') {
+      cr_max = _tM > 0 ? ap * (1 - Math.pow(1+_tM, -pr)) / _tM : ap * pr;
+    } else {
+      cr_max = ap / (1/pr + _tM);
+    }
+    // Modo reverso: usa régua SFI (30%) → ent ≥ 30% × val → cr ≤ ent × (70/30)
+    if (ent > 0) cr_max = Math.min(cr_max, ent * (70 / 30));
+    // Piso: banco não financia abaixo de R$ 80k
+    cr_max = Math.round(Math.max(cr_max, MIN_CR_FIN));
+    val = cr_max + Math.round(ent); // garante que cr = val - ent seja inteiro
+  }
+  const entRaw = g('im_ent') ? g('im_ent').value.trim() : '';
+  const entZerado   = entRaw !== '' && ent === 0; // campo preenchido explicitamente com zero
+  const entInformada = ent > 0;                   // valor positivo informado
+  const entTes = ent;                             // valor real para cálculos do Tesouro (0 se campo vazio)
+  // Campo vazio (não zero) com imóvel → usa 30% como referência para cálculo (só financiamento)
+  if (!isReverse && !entZerado && ent === 0 && val > 0) ent = val * 0.30;
+  const lanceP  = parseFloat(g('im_lance_proprio') ? g('im_lance_proprio').value : 0) || 0;
+
+  const rfPre = gv('im_rf_pre') || rf;
+  const cr    = val - ent;
+  const tM    = sis==='PREFIXADA' ? toM(rfPre) : toM(rf);
+  const corA  = cor==='TR'?tr:cor==='IPCA'?ipca:0;
+  const sisLabel = sis==='SAC'?'SAC':sis==='PRICE'?'PRICE':'Prefixada';
+  const corLabel = cor==='NENHUMA'?'Sem correção':cor==='TR'?`+TR ${N(tr)}% a.a.`:`+IPCA ${N(ipca)}% a.a.`;
+
+  // ── TESOURO ──
+  const selicM  = toM(rs);
+  const fvTes   = fv(entTes, ap, selicM, pr);
+  const totInv  = entTes + ap*pr;
+  const rendMes = fvTes * selicM; // rendimento mensal no final
+  const mTes    = mesesParaAtingir(val, entTes, ap, selicM);
+
+
+  // ── FINANCIAMENTO ──
+  const rows  = getFinRows(cr, sis, cor, tM, pr, tr, ipca);
+  const totFin= ent + rows.reduce((s,r)=>s+r.p,0);
+  const cetFin= calcCET(rows, cr);
+
+  // ── CONSÓRCIO ──
+  // O cliente quer financiar `val` (= crédito líquido desejado).
+  // Lance embutido: lido do card de consórcio (se existe), senão padrão 25%.
+  const lanceEmbEl = g('im_lance_embutido_r');
+  const lanceEmbPct = lanceEmbEl ? (parseFloat(lanceEmbEl.value)||0) : 0.25;
+  const mpmEl = g('im_mpm_r');
+  const mpm = mpmEl ? parseFloat(mpmEl.value)||0 : 0;
+  // MPM 50% só disponível para prazos 200-240m
+  const prazoAjustado = prazoAjustadoPorPlano(pr, mpm);
+  if(prazoAjustado !== pr){
+    g('im_pr').value = String(prazoAjustado);
+    const prGlobal = g('im_pr_global');
+    if(prGlobal) prGlobal.value = String(prazoAjustado);
+  }
+  let mpmEfetivo = mpm;
+  let consCred = val;
+  let prazoConsEfetivo = Math.min(prazoAjustado, 240); // consórcio: máximo 240 meses
+
+  if (isReverse && ap > 0) {
+    // Modo reverso (com ou sem entrada): convencional sem redução, procura carta onde parcelaPre ≈ ap
+    mpmEfetivo = 0;
+    let cartaEst = ap * prazoConsEfetivo / 0.75;
+    for (let i = 0; i < 4; i++) {
+      const cfgEst = getConsorcioConfig(cartaEst, prazoConsEfetivo);
+      if (!cfgEst) break;
+      cartaEst = ap * prazoConsEfetivo / (1 + cfgEst.taxaAdm + cfgEst.fundo);
+    }
+    consCred = cartaEst * (1 - lanceEmbPct);
+  }
+
+  let cons = calcConsorcio(consCred, prazoConsEfetivo, mpmEfetivo, lanceP, contemp, incc, correcaoAtiva, lanceEmbPct);
+  // Se 1 carta não cobre o crédito desejado (carta insuficiente), usa 2 cartas iguais.
+  let numCartas = 1;
+  if (!isReverse && cons.creditoLiquido < consCred * 0.99) {
+    numCartas = 2;
+    cons = calcConsorcio(consCred / 2, prazoConsEfetivo, mpmEfetivo, lanceP / 2, contemp, incc, correcaoAtiva, lanceEmbPct);
+  }
+  const prCons = prazoConsEfetivo;
+  const totCons= numCartas * (cons.totalPago + cons.lanceProprio);
+  const cetCons= cons.cetAnual;
+
+  const mn = Math.min(totFin, totCons);
+
+  // ── GERAR DADOS PARA GRÁFICOS ──
+  // Parcela no tempo
+  const mesesChart = Array.from({length:pr},(_,i)=>i+1);
+  const parcFin    = rows.map(r=>r.p);
+  const parcCons   = cons.rows.map(r=>r.p*numCartas);
+  const parcTes    = Array(pr).fill(ap);
+
+  // Saldo devedor no tempo
+  const sdFin  = rows.map(r=>r.sd);
+  const sdCons = cons.rows.map(r=>r.sd);
+
+  // Tesouro acumulado no tempo
+  let tesSaldo=entTes;
+  const tesAcum=Array.from({length:pr},()=>{tesSaldo=tesSaldo*(1+selicM)+ap;return tesSaldo;});
+
+  // ── VARS EXTRAS PARA VISUALIZAÇÕES ──
+  const inccM2 = incc/100/12;
+  const refFull = Array.from({length:pr+1},(_,m)=>val*Math.pow(1+inccM2,m));
+  let _fc=ent; const finAcumFull=[ent,...rows.map(r=>{_fc+=r.p;return _fc;})];
+  let _cc=0; const conAcumFull=[0,...cons.rows.map((r,i)=>{_cc+=r.p*numCartas;if(i+1===contemp)_cc+=cons.lanceProprio*numCartas;return _cc;})];
+  const tesAcumFull=[entTes,...tesAcum];
+  let crossT2=null; for(let m=0;m<=pr;m++){if(tesAcumFull[m]>=refFull[m]){crossT2=m;break;}}
+  const aTes=crossT2!==null?entTes+ap*crossT2:entTes+ap*pr;
+  const rTes=crossT2!==null?tesAcumFull[crossT2]-aTes:fvTes-totInv;
+  const iCorrMtes=crossT2!==null?refFull[crossT2]:refFull[pr];
+  const jurosFin=totFin-val; // totFin = ent+cr+juros = val+juros
+  const alugVal=_alugAtivo?(()=>{const el=g('im_alug_val');return el?gv('im_alug_val'):0;})():0;
+  const imCorGlobal = g('im_cor_global') ? g('im_cor_global').value : 'off';
+  const igpmIm = imCorGlobal !== 'off' ? (gv('im_igpm') || 6.50) : 0;
+  const _aluAcum = (meses) => { let t=0,a=alugVal; for(let i=1;i<=meses;i++){if(i>1&&(i-1)%12===0)a*=(1+igpmIm/100);t+=a;} return t; };
+  const aluTes = isReverse ? _aluAcum(pr) : (crossT2!==null?_aluAcum(crossT2):0);
+  const aluCon=_aluAcum(contemp);
+  const tesTot=crossT2!==null?(entTes+ap*crossT2+aluTes):null;
+  const totConsAlug=totCons+aluCon;
+  const minTot=Math.min(...[tesTot,totFin,totConsAlug].filter(x=>x!=null));
+
+  // ── SALDO DEVEDOR ──
+  const tMpos=toM(rf);
+  const sdSACbase  =cr>0?[cr,...getFinRows(cr,'SAC',cor,tMpos,pr,tr,ipca).map(r=>r.sd)]:null;
+  const sdPRICEbase=cr>0?[cr,...getFinRows(cr,'PRICE',cor,tMpos,pr,tr,ipca).map(r=>r.sd)]:null;
+  // Consórcio: sem pad de zeros — linha para naturalmente no fim do prazo
+  const sdConsArr  =cons.carta>0?[numCartas*cons.carta,...cons.rows.map(r=>numCartas*r.sd)]:null;
+
+  const finViavel=!entZerado&&!(isReverse&&!entInformada);
+  window.__imCharts={pr,val,ent:entTes,cr,ap,totFin,totCons:totConsAlug,selicM,inccM:inccM2,mTes,crossT:crossT2,isReverse,finViavel,fvTes,totInv,alugVal,aluTes,aluCon,
+    refFull,tesAcumFull,finAcumFull,conAcumFull,contemp,
+    parcFin,parcCons,parcTes,cons,numCartas,aTes,rTes,iCorrMtes,jurosFin,tesTot,minTot,sisLabel,
+    sdSACbase,sdPRICEbase,sdConsArr,cor};
+
+  const el = g('res-imovel');
+
+  el.innerHTML = `
+
+    <!-- CHIPS COMPARATIVOS -->
+    <div class="srow">
+      <!-- TESOURO -->
+      <div class="chip" style="border-color:rgba(52,199,123,.3)">
+        <div class="chip-accent" style="background:var(--succ)"></div>
+        <div class="chip-name">Guardar no Tesouro</div>
+        <div class="chip-mod">Selic ${N(rs)}% a.a.</div>
+        ${isReverse ? `
+          <div class="chip-row"><span class="lb">Recurso próprio inicial</span><span class="vl" style="color:var(--succ)">${R(entTes)}</span></div>
+          <div class="chip-row"><span class="lb">Aporte mensal</span><span class="vl">${R(ap)}</span></div>
+          <div class="chip-row"><span class="lb">Total aportado (${pr}m)</span><span class="vl">${R(totInv)}</span></div>
+          <div class="chip-row"><span class="lb">Rendimento</span><span class="vl pos">${R(fvTes-totInv)}</span></div>
+          <div class="chip-total" style="color:var(--succ)">${R(fvTes)}</div>
+          <div style="font-size:10px;color:var(--ts);margin-top:6px">Patrimônio acumulado em ${pr} meses · rende <b style="color:var(--succ)">${R(rendMes)}/mês</b> ao final</div>
+        ` : crossT2 !== null ? `
+          <div class="chip-row"><span class="lb">Recurso próprio inicial</span><span class="vl" style="color:var(--succ)">${R(entTes)}</span></div>
+          <div class="chip-row"><span class="lb">Aporte mensal</span><span class="vl">${R(ap)}</span></div>
+          <div class="chip-row"><span class="lb">Total aportado</span><span class="vl">${R(aTes)}</span></div>
+          <div class="chip-row"><span class="lb">Rendimento acumulado</span><span class="vl pos">${R(rTes)}</span></div>
+          <div class="chip-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+            <span class="lb">Imóvel corrigido (INCC ${N(incc)}% a.a.)</span>
+            <span class="vl" style="color:var(--succ)">${R(iCorrMtes)}</span>
+          </div>
+          <div class="chip-total" style="color:var(--succ);font-size:16px">${crossT2} meses · ${N(crossT2/12,1)} anos</div>
+          <div style="font-size:10px;color:var(--ts);margin-top:4px">Tempo para juntar o valor corrigido do imóvel pelo INCC</div>
+        ` : `
+          <div class="chip-row"><span class="lb">Recurso próprio inicial</span><span class="vl">${R(entTes)}</span></div>
+          <div class="chip-row"><span class="lb">Aporte mensal</span><span class="vl">${R(ap)}</span></div>
+          <div class="chip-row"><span class="lb">Acumulado em ${pr}m</span><span class="vl">${R(fvTes)}</span></div>
+          <div class="chip-row" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+            <span class="lb">Imóvel estimado em ${pr}m (INCC ${N(incc)}% a.a.)</span>
+            <span class="vl" style="color:var(--err)">${R(iCorrMtes)}</span>
+          </div>
+          <div class="chip-total" style="color:var(--err)">Não acumula no prazo</div>
+          <div style="font-size:10px;color:var(--ts);margin-top:4px">O imóvel valoriza mais rápido que o rendimento da Selic com esse aporte.</div>
+        `}
+      </div>
+
+      <!-- FINANCIAMENTO -->
+      <div class="chip">
+        <div class="chip-accent" style="background:var(--sec)"></div>
+        <div class="chip-name">Financiamento ${sisLabel}</div>
+        <div class="chip-mod">${corLabel} · ${pr}m</div>
+        <div style="margin-bottom:10px">
+          <select id="im_sis_r" onchange="syncSis();calcImovel()" style="background:#1e2030;border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--tp);font-size:12px;width:100%;outline:none;cursor:pointer;appearance:none">
+            <option value="SAC" ${sis==='SAC'?'selected':''} style="background:#1e2030">SAC — Amortização Constante</option>
+            <option value="PRICE" ${sis==='PRICE'?'selected':''} style="background:#1e2030">PRICE — Parcela Constante</option>
+            <option value="PREFIXADA" ${sis==='PREFIXADA'?'selected':''} style="background:#1e2030">Prefixada — Sem correção</option>
+          </select>
+        </div>
+        ${(entZerado || (isReverse && !entInformada)) ? `
+          <div style="padding:16px 0;text-align:center">
+            <div style="font-size:13px;font-weight:600;color:var(--tp);margin-bottom:10px">Recurso próprio necessário</div>
+            <div style="font-size:12px;color:var(--ts);line-height:1.8">
+              O financiamento imobiliário exige entrada mínima:<br>
+              <span style="color:var(--tp);font-weight:600">SFH</span> — mínimo <b>5%</b> do valor do imóvel<br>
+              <span style="color:var(--tp);font-weight:600">SFI</span> — idealmente <b>30%</b> do valor do imóvel
+            </div>
+            <div style="margin-top:14px;font-size:11px;color:var(--ts)">Informe o recurso próprio disponível para simular.</div>
+          </div>
+        ` : `
+          <div class="chip-row"><span class="lb">Valor do imóvel</span><span class="vl">${R(val)}</span></div>
+          <div class="chip-row"><span class="lb">Valor do crédito</span><span class="vl">${R(cr)}</span></div>
+          <div class="chip-row"><span class="lb">${entInformada ? 'Entrada disponível' : 'Entrada necessária'}${val > 0 ? ` · ${N(ent/val*100,0)}%` : ''}</span><span class="vl neg">${R(ent)}</span></div>
+          ${entInformada && val > 0 && ent < val * 0.05 ? `
+            <div style="background:rgba(255,59,48,.08);border:1px solid rgba(255,59,48,.25);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--err);margin:6px 0">
+              ⚠ Entrada abaixo do mínimo exigido pelos bancos (5% = ${R(val*0.05)} para SFH). O financiamento pode não ser aprovado.
+            </div>
+          ` : entInformada && val > 0 && !isReverse && ent < val * 0.30 ? `
+            <div style="background:rgba(255,179,0,.07);border:1px solid rgba(255,179,0,.25);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--gold);margin:6px 0">
+              ${val > 2250000
+                ? `ℹ Entrada abaixo de 30% — imóveis SFI (acima de R$ 2,25M) exigem idealmente 30% ou mais de entrada.`
+                : `ℹ Entrada de ${N(ent/val*100,0)}% — enquadramento SFH.`}
+            </div>
+          ` : ''}
+          ${cr > 0 && cr < MIN_CR_FIN ? `
+            <div style="background:rgba(255,59,48,.08);border:1px solid rgba(255,59,48,.25);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--err);margin:6px 0">
+              ⚠ Crédito de ${R(cr)} abaixo do mínimo praticado pelos bancos (R$ 80.000–R$ 100.000). Considere consórcio ou poupança.
+            </div>
+          ` : ''}
+          <div class="chip-row"><span class="lb">1ª Parcela</span><span class="vl" style="color:var(--sec)">${R(rows[0].p)}</span></div>
+          <div class="chip-row"><span class="lb">Última Parcela</span><span class="vl">${R(rows[rows.length-1].p)}</span></div>
+          <div class="chip-row"><span class="lb">Total pago em parcelas</span><span class="vl">${R(totFin-ent)}</span></div>
+          <div class="chip-row"><span class="lb">Total Juros</span><span class="vl neg">${R(totFin-ent-cr)}</span></div>
+          <div class="chip-total" style="color:var(--sec)">${R(totFin)}</div>
+          <div class="cet-badge" onclick="this.nextElementSibling.classList.toggle('open')">
+            CET ${N(cetFin)}% a.a. <span style="font-size:10px">▾ ver detalhes</span>
+          </div>
+          <div class="cet-detail">
+            CET inclui: juros nominais (${N(rf)}% a.a.) + seguro estimado de R$ 100/mês + taxa operacional estimada de R$ 25/mês.<br>
+            ⚠ Taxa sujeita à análise de perfil do cliente — o valor indicado é uma referência de mercado e pode não corresponder à realidade. Edite o campo para simular outros valores.
+          </div>
+        `}
+      </div>
+
+      <!-- CONSÓRCIO -->
+      <div class="chip">
+        <div class="chip-accent" style="background:var(--cons)"></div>
+        <div class="chip-name">Consórcio${numCartas===2?' · 2 cartas':''}</div>
+        <div class="chip-mod">${cons.cfg.tabela} · ${prCons}m</div>
+
+        <div class="f" style="margin-bottom:10px">
+          <label style="font-size:9px;color:var(--ts)">Mais por Menos</label>
+          <select id="im_mpm_r" onchange="window.mpmGlobal=parseFloat(this.value)||0;updatePrazosGlobais();calcImovel()" style="background:#1e2030;border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--tp);font-size:12px;width:100%;outline:none;cursor:pointer;appearance:none">
+            <option value="0" ${mpmEfetivo===0?'selected':''}>Sem redução (convencional)</option>
+            <option value="0.25" ${mpmEfetivo===0.25?'selected':''}>25% a menos até contemplação</option>
+            <option value="0.50" ${mpmEfetivo===0.50?'selected':''} ${pr<=180?'disabled':''}>50% a menos até contemplação ${pr<=180?'(apenas 200–240m)':''}</option>
+          </select>
+        </div>
+
+        ${numCartas===2?`
+        <div style="background:rgba(107,167,232,.07);border:1px solid rgba(107,167,232,.2);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--cons);margin-bottom:10px">
+          Crédito acima do limite de uma carta — simulado com 2 cartas de ${R(cons.carta)} cada.
+        </div>`:''}
+
+        <div class="chip-row"><span class="lb">Carta${numCartas===2?' (cada)':' de Crédito'}</span><span class="vl" style="color:var(--cons)">${R(cons.carta)}</span></div>
+        <div class="chip-row"><span class="lb">Crédito Líquido Total</span><span class="vl pos">${R(numCartas*cons.creditoLiquido)}</span></div>
+
+        <div class="f" style="margin:10px 0">
+          <label style="font-size:9px;color:var(--ts)">Lance Embutido</label>
+          <select id="im_lance_embutido_r" onchange="calcImovel()" style="background:#1e2030;border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--tp);font-size:12px;width:100%;outline:none;cursor:pointer;appearance:none">
+            <option value="0" ${lanceEmbPct===0?'selected':''}>Sem lance embutido</option>
+            <option value="0.25" ${lanceEmbPct===0.25?'selected':''}>25% do crédito</option>
+          </select>
+          <div class="chip-row" style="margin-top:8px;margin-bottom:0">
+            <span class="lb">Lance Embutido${numCartas===2?' (total)':''}</span>
+            <span class="vl">${R(numCartas*cons.lanceEmbutido)}</span>
+          </div>
+        </div>
+
+        <div class="f">
+          <label style="font-size:9px;color:var(--ts)">Lance Próprio (R$)</label>
+          <input type="text" id="im_lance_r" value="${R(lanceP > 0 ? lanceP : 0)}" onfocus="this.dataset.raw=gv('im_lance_r');this.value=this.dataset.raw" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="if(this.value===''){this.value='0'};maskCurrency(this);syncLance();calcImovel()" style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--tp);font-size:12px;width:100%;outline:none">
+        </div>
+
+        <div class="f" style="margin-top:10px">
+          <label style="font-size:9px;color:var(--ts)">Meses até a Contemplação</label>
+          <input type="text" inputmode="numeric" id="im_contemp_r" value="${contemp}" min="6" max="180" onchange="syncContemp();calcImovel()" style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--tp);font-size:12px;width:100%;outline:none" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
+        </div>
+
+        <div class="chip-row" style="margin-top:12px"><span class="lb">1ª Parcela${numCartas===2?' (total)':''}</span><span class="vl" style="color:var(--cons)">${R(numCartas*cons.p1)}</span></div>
+
+        <div class="chip-row"><span class="lb">Demais Parcelas${numCartas===2?' (total)':''}</span><span class="vl" style="color:var(--cons)">${R(numCartas*cons.parcelaPre)}</span></div>
+        <div class="chip-row"><span class="lb">Total parcelas até contemplação</span><span class="vl">${R(numCartas*cons.rows.filter(r=>r.fase!=='Pós').reduce((s,r)=>s+r.p,0))}</span></div>
+
+        <div class="chip-row"><span class="lb">Parcela Pós Contemplação${numCartas===2?' (total)':''}</span><span class="vl">${R(numCartas*cons.parcelaPos)}</span></div>
+
+        <div class="chip-row"><span class="lb">Lance Total</span><span class="vl">${R(numCartas*cons.lanceTotal)}</span></div>
+
+        <div class="chip-row"><span class="lb">Prazo Total</span><span class="vl">${cons.prazoEfetivo} meses</span></div>
+
+        <div class="chip-total" style="color:var(--gold)">${R(totCons)}</div>
+        <div class="cet-badge" onclick="this.nextElementSibling.classList.toggle('open')">
+          Custo financeiro estimado: ${N(cetCons)}% a.a. <span style="font-size:10px">▾ ver detalhes</span>
+        </div>
+        <div class="cet-detail">
+          <b>Como é calculado:</b> (total pago − crédito recebido) ÷ crédito ÷ prazo em anos.<br>
+          Total pago: ${R(numCartas*cons.totalPago)} · Crédito líquido: ${R(numCartas*cons.creditoLiquido)} · Custo: ${R(numCartas*(cons.totalPago-cons.creditoLiquido))}<br>
+          ${cons.cfg.tabela}: adm. ${(cons.cfg.taxaAdm*100).toFixed(0)}% + fundo ${(cons.cfg.fundo*100).toFixed(0)}% + antecipada ${(cons.cfg.antecipada*100).toFixed(0)}%.<br>
+          Correção: ${cons.cfg.correcao} ${correcaoAtiva?`(${N(incc)}% a.a. aplicado)`:'(não aplicada)'}. Lance próprio: ${R(numCartas*cons.lanceProprio)}.
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VISUALIZAÇÕES DASHBOARD ── -->
+
+    <!-- CARD 1: TOTAL GASTO -->
+    <div class="dash-card">
+      <div class="dash-h">Total gasto por caminho</div>
+      <div class="dg-cols">
+        ${(()=>{
+          const items=[
+            ...(isReverse?[{k:'Tesouro',meta:'junta e compra à vista',val:totInv+aluTes,color:'var(--succ)',brk:[
+              ['Total aportado ('+pr+'m)',totInv,false],
+              ...(aluTes>0?[['Aluguel no período',aluTes,true]]:[]),
+            ]}]:tesTot!=null?[{k:'Tesouro',meta:'junta e compra à vista',val:tesTot,color:'var(--succ)',brk:[
+              ['Total aportado',entTes+ap*crossT2,false],
+              ...(aluTes>0?[['Aluguel no período',aluTes,true]]:[]),
+              [crossT2>=12?'Tempo: '+(crossT2/12).toFixed(1)+' anos':'Tempo: '+crossT2+' meses',null,false],
+            ]}]:[]),
+            {k:'Financiamento '+sisLabel,meta:(!entZerado&&!(isReverse&&!entInformada))?'chave hoje, paga com juros compostos':'informe um recurso próprio para simular',val:(!entZerado&&!(isReverse&&!entInformada))?totFin:null,color:'var(--sec)',brk:(!entZerado&&!(isReverse&&!entInformada))?[['Entrada',ent,false],['Crédito',cr,false],['Juros totais',jurosFin,true]]:[]},
+            {k:'Consórcio'+(numCartas===2?' (2 cartas)':''),meta:'sem juros compostos, espera a contemplação',val:totConsAlug,color:'var(--cons)',brk:[
+              ['Lance próprio',numCartas*cons.lanceProprio,false],['Parcelas',numCartas*cons.totalPago,false],
+              ...(aluCon>0?[['Aluguel até contemplação',aluCon,true]]:[]),
+            ]},
+          ];
+          return items.map(it=>`
+            <div class="dg-col">
+              <div class="dg-colname" style="color:${it.color}">${it.k}</div>
+              <div class="dg-meta">${it.meta}</div>
+              ${it.val!=null?`<div class="dg-total">${R(it.val)}</div><ul class="dg-brk">${it.brk.map(([k,v,neg])=>v!=null?`<li><span class="dk">${k}</span><span class="dv${neg?' neg':''}">${R(v)}</span></li>`:`<li><span class="dk">${k}</span></li>`).join('')}</ul>`:`<div style="color:var(--ts);font-size:12px;margin-top:8px">—</div>`}
+            </div>`).join('');
+        })()}
+      </div>
+      <div class="dg-foot"></div>
+    </div>
+
+    <div class="charts-grid">
+
+    <!-- CARD 2: IMÓVEL VALORIZANDO × 3 CAMINHOS -->
+    <div class="dash-card">
+      <div class="dash-h">Imóvel valorizando × os 3 caminhos</div>
+      <div class="dg-legend">
+        <div class="dg-lg"><span class="dg-sw dash"></span>Imóvel (INCC)</div>
+        <div class="dg-lg"><span class="dg-sw" style="background:var(--succ)"></span>Tesouro acumulado</div>
+        <div class="dg-lg"><span class="dg-sw" style="background:var(--sec)"></span>Financiamento pago</div>
+        <div class="dg-lg"><span class="dg-sw" style="background:var(--cons)"></span>Consórcio pago</div>
+      </div>
+      <div class="dg-cbox"><canvas id="dc_tempo" style="width:100%;height:220px;display:block"></canvas><div class="dg-tip" id="dt_tempo"></div></div>
+    </div>
+
+    <!-- CARD 3: PARCELAS NO TEMPO -->
+    <div class="dash-card">
+      <div class="dash-h">Parcelas no tempo · desembolso mensal recorrente</div>
+      <div class="dg-legend">
+        <div class="dg-lg"><span class="dg-sw" style="background:var(--succ)"></span>Tesouro (aporte)</div>
+        <div class="dg-lg"><span class="dg-sw" style="background:var(--sec)"></span>Financiamento</div>
+        <div class="dg-lg"><span class="dg-sw" style="background:var(--cons)"></span>Consórcio</div>
+      </div>
+      <div class="dg-cbox"><canvas id="dc_parc" style="width:100%;height:200px;display:block"></canvas><div class="dg-tip" id="dt_parc"></div></div>
+      ${parcCons.length?`<div class="dg-note">* 1ª parcela Consórcio: <b>${R(parcCons[0])}</b> (não exibida na escala)</div>`:''}
+    </div>
+
+    <!-- CARD SD: SALDO DEVEDOR -->
+    <div class="dash-card">
+      <div class="dash-h">Saldo devedor ao longo do tempo</div>
+      <div class="dg-legend">
+        ${cr>0?`<div class="dg-lg"><span class="dg-sw" style="background:#C9A84C"></span>SAC${cor!=='NENHUMA'?' +'+cor:''}</div>`:''}
+        ${cr>0?`<div class="dg-lg"><span class="dg-sw" style="background:#e07b39"></span>PRICE${cor!=='NENHUMA'?' +'+cor:''}</div>`:''}
+        <div class="dg-lg"><span class="dg-sw" style="background:var(--cons)"></span>Consórcio</div>
+      </div>
+      <div class="dg-cbox"><canvas id="dc_sdv" style="width:100%;height:220px;display:block"></canvas><div class="dg-tip" id="dt_sdv"></div></div>
+    </div>
+
+    <!-- CARD 4: COMPOSIÇÃO DO CUSTO -->
+    <div class="dash-card">
+      <div class="dash-h">Composição do custo por modalidade</div>
+      <div class="dg-tabs">
+        <button class="dg-tab tes on" onclick="_swCascata('tes',this)">Tesouro</button>
+        <button class="dg-tab fin" onclick="_swCascata('fin',this)">Financiamento</button>
+        <button class="dg-tab con" onclick="_swCascata('con',this)">Consórcio</button>
+      </div>
+      <div class="dg-cbox"><canvas id="dc_casc" style="width:100%;height:240px;display:block"></canvas></div>
+      <div class="dg-cfoot" id="dc_casc_foot"></div>
+    </div>
+
+    </div><!-- /charts-grid -->
+
+    <div style="height:24px"></div>
+
+    <!-- TABS DETALHADAS -->
+    <div class="tabs">
+      <button class="tab active" onclick="swTab(this,'tab-tes')">Tesouro</button>
+      <button class="tab" onclick="swTab(this,'tab-fin')">Financiamento</button>
+      <button class="tab" onclick="swTab(this,'tab-cons')">Consórcio</button>
+    </div>
+
+    <!-- TAB FIN -->
+    <div id="tab-fin" class="tp">
+      ${finViavel?`
+      <div class="sg sg4">
+        <div class="st"><div class="sl">Sistema</div><div class="sv">${sisLabel}</div></div>
+        <div class="st"><div class="sl">Correção</div><div class="sv">${cor==='NENHUMA'?'Não':cor}</div></div>
+        <div class="st"><div class="sl">Juros Nominais</div><div class="sv">${N(rf)}%</div></div>
+        <div class="st"><div class="sl">CET Estimado</div><div class="sv">${N(cetFin)}%</div></div>
+      </div>
+      <div class="tw"><table><thead><tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amortização</th><th>Saldo</th></tr></thead><tbody>
+        ${buildShow(rows,pr).map(o=>o.e?'<tr class="ellr" onclick="expandTable(this)"><td colspan="5">•••</td></tr>':`<tr${o.h?' class="exp-row" style="display:none"':''}><td>${o.r.mes}</td><td class="hi">${R(o.r.p)}</td><td class="neg">${R(o.r.j)}</td><td class="pos">${R(o.r.am)}</td><td>${R(o.r.sd)}</td></tr>`).join('')}
+      </tbody></table><div class="tnote">Mostrando 6 primeiras e 6 últimas parcelas · clique em ••• para expandir</div></div>
+      `:`<div style="color:var(--ts);font-size:13px;padding:24px 0">Informe um recurso próprio para simular o financiamento.</div>`}
+    </div>
+
+    <!-- TAB CONS -->
+    <div id="tab-cons" class="tp">
+      <div class="sg sg4">
+        <div class="st"><div class="sl">Tabela</div><div class="sv">${cons.cfg.tabela}${numCartas===2?' ×2':''}</div></div>
+        <div class="st"><div class="sl">Carta${numCartas===2?' (cada)':''}</div><div class="sv">${R(cons.carta)}</div></div>
+        <div class="st"><div class="sl">Crédito Líquido${numCartas===2?' (total)':''}</div><div class="sv">${R(numCartas*cons.creditoLiquido)}</div></div>
+        <div class="st"><div class="sl">Prazo Efetivo</div><div class="sv">${cons.prazoEfetivo}m</div></div>
+      </div>
+      <div class="al al-i">💡 A pós-contemplação é recalculada pelo saldo remanescente após lance e parcelas pagas. Mais por Menos reduz antes e aumenta depois.</div>
+      <div class="tw"><table><thead><tr><th>Mês</th><th>Fase</th><th>Parcela</th><th>Saldo</th><th>Obs.</th></tr></thead><tbody>
+        ${buildShow(cons.rows,cons.rows.length).map(o=>o.e?'<tr class="ellr" onclick="expandTable(this)"><td colspan="5">•••</td></tr>':`<tr${o.h?' class="exp-row" style="display:none"':''}><td>${o.r.mes}</td><td>${o.r.fase}</td><td class="hi">${R(o.r.p)}</td><td>${R(o.r.sd)}</td><td>${o.r.obs||''}</td></tr>`).join('')}
+      </tbody></table><div class="tnote">Correção ${cons.cfg.correcao}: ${correcaoAtiva?'aplicada anualmente':'não aplicada'}</div></div>
+    </div>
+
+    <!-- TAB TES -->
+    <div id="tab-tes" class="tp active">
+      <div class="tes-monthly">
+        <div><span class="tm-label">Rendimento mensal estimado no fim do período</span></div>
+        <div class="tm-val">${R(rendMes)}</div>
+      </div>
+      <div class="sg sg4">
+        <div class="st"><div class="sl">Entrada</div><div class="sv">${R(ent)}</div></div>
+        <div class="st"><div class="sl">Aporte Mensal</div><div class="sv">${R(ap)}</div></div>
+        <div class="st"><div class="sl">Total Aplicado</div><div class="sv">${R(totInv)}</div></div>
+        <div class="st"><div class="sl">Rendimento</div><div class="sv pos">${R(fvTes-totInv)}</div></div>
+      </div>
+      <div class="tw"><table><thead><tr><th>Mês</th><th>Aporte</th><th>Rendimento</th><th>Saldo</th></tr></thead><tbody>
+        ${buildShow(tesAcum.map((s,i)=>({mes:i+1,ap,j:i===0?s-entTes-ap:s-tesAcum[i-1]-ap,sd:s})),pr).map(o=>o.e?'<tr class="ellr" onclick="expandTable(this)"><td colspan="4">•••</td></tr>':`<tr${o.h?' class="exp-row" style="display:none"':''}><td>${o.r.mes}</td><td>${R(ap)}</td><td class="pos">${R(o.r.j)}</td><td class="hi">${R(o.r.sd)}</td></tr>`).join('')}
+      </tbody></table></div>
+    </div>
+
+    
+  `;
+
+  showR('res-imovel');
+  requestAnimationFrame(()=>requestAnimationFrame(_drawImCharts));
+  updatePrazosGlobais();
+}
+
+updatePrazosGlobais();
+
+
+// ── MODO DE SIMULAÇÃO ──
+let _alugAtivo = false;
+
+function imSetAlug(on) {
+  _alugAtivo = on;
+  document.getElementById('im_alug_n').classList.toggle('on', !on);
+  document.getElementById('im_alug_s').classList.toggle('on', on);
+  document.getElementById('im_alug_wrap').style.display = on ? 'block' : 'none';
+  calcImovel();
+}
+
+function imDetectMode() {
+  const valRaw = document.getElementById('im_val').value.trim();
+  const entRaw = document.getElementById('im_ent').value.trim();
+  const apRaw  = document.getElementById('im_ap').value.trim();
+  const hasVal = valRaw !== '' && valRaw !== 'R$ 0,00';
+  const hasEnt = entRaw !== '' && entRaw !== 'R$ 0,00';
+  const hasAp  = apRaw  !== '' && apRaw  !== 'R$ 0,00';
+
+  const badge = document.getElementById('im_mode_badge');
+  const hint  = document.getElementById('im_ent_hint');
+
+  if (!hasVal && hasAp) {
+    if (badge) { badge.textContent = 'capacidade máxima'; badge.style.color = 'var(--gold)'; badge.style.background = 'var(--gold-bg)'; }
+    if (hint) hint.textContent = 'Recurso próprio para entrada ou lance';
+  } else {
+    if (badge) { badge.textContent = ''; }
+    if (hint) hint.textContent = 'Normalmente 30% do valor do imóvel';
+  }
+}
+
+// ── DASHBOARD CHART FUNCTIONS ──
+let _cascTab='tes';
+function _swCascata(t,btn){
+  _cascTab=t;
+  document.querySelectorAll('.dg-tab').forEach(b=>{b.classList.remove('on');});
+  btn.classList.add('on');
+  _drawCascata(window.__imCharts);
+}
+
+function _mkCtx(id){
+  const el=document.getElementById(id);
+  if(!el)return null;
+  const dpr=window.devicePixelRatio||1;
+  const w=el.offsetWidth||800,h=el.offsetHeight||220;
+  el.width=w*dpr;el.height=h*dpr;
+  const cx=el.getContext('2d');cx.scale(dpr,dpr);
+  return {cx,w,h,el};
+}
+
+function _gridLines(cx,PL,PR,PT,PB,W,H,minV,maxV,fmt){
+  const steps=4;
+  for(let i=0;i<=steps;i++){
+    const v=minV+(maxV-minV)*i/steps,yy=PT+(H-PT-PB)*(1-i/steps);
+    cx.beginPath();cx.moveTo(PL,yy);cx.lineTo(W-PR,yy);
+    cx.strokeStyle='rgba(46,48,68,.6)';cx.lineWidth=1;cx.setLineDash([3,5]);cx.stroke();cx.setLineDash([]);
+    cx.fillStyle='#9CA3AF';cx.font='10px Inter,sans-serif';cx.textAlign='right';
+    cx.fillText(fmt(v),PL-4,yy+4);
+  }
+}
+
+function _drawLineChart(id,tipId,series,pr,xFmt,yFmt,opts={}){
+  const ctx=_mkCtx(id);if(!ctx)return;
+  const {cx,w,h}=ctx;
+  const PL=58,PR=16,PT=16,PB=28;
+  const allV=series.flatMap(s=>s.skipFirstInScale?s.data.slice(1):s.data).filter(v=>v!=null&&isFinite(v));
+  const maxV=Math.max(...allV)*1.06||1;
+  const minV=opts.autoMin?Math.min(...allV)*0.94:0;
+  const rangeV=maxV-minV;
+  const xp=m=>PL+(m/pr)*(w-PL-PR);
+  const yp=v=>PT+(h-PT-PB)*(1-(v-minV)/rangeV);
+  cx.clearRect(0,0,w,h);
+  _gridLines(cx,PL,PR,PT,PB,w,h,minV,maxV,yFmt);
+  // x labels
+  const st=Math.max(12,Math.round(pr/5/12)*12);
+  cx.fillStyle='#9CA3AF';cx.font='10px Inter,sans-serif';cx.textAlign='center';
+  for(let m=0;m<=pr;m+=st)cx.fillText(xFmt(m),xp(m),h-PB+18);
+  // lines
+  series.forEach(s=>{
+    if(!s.data||!s.data.length)return;
+    cx.beginPath();
+    if(s.dash)cx.setLineDash(s.dash);else cx.setLineDash([]);
+    cx.strokeStyle=s.color;cx.lineWidth=s.lw||2.5;
+    let first=true;
+    s.data.forEach((v,i)=>{
+      if(v==null)return;
+      first?cx.moveTo(xp(i),yp(v)):cx.lineTo(xp(i),yp(v));
+      first=false;
+    });
+    cx.stroke();cx.setLineDash([]);
+    // key marker
+    if(s.keyAt!=null&&s.keyAt<=pr&&s.data[s.keyAt]!=null){
+      const kx=xp(s.keyAt),ky=yp(s.data[s.keyAt]);
+      cx.beginPath();cx.arc(kx,ky,5,0,Math.PI*2);cx.fillStyle=s.color;cx.fill();
+      cx.fillStyle='#0C0E18';cx.beginPath();cx.arc(kx,ky,3,0,Math.PI*2);cx.fill();
+      cx.fillStyle=s.color;cx.font='bold 11px Inter,sans-serif';cx.textAlign='center';
+      cx.fillText('🔑',kx,ky-14);
+    }
+  });
+  // tooltip
+  const canv=document.getElementById(id),tip=document.getElementById(tipId);
+  if(!canv||!tip)return;
+  const onMove=ev=>{
+    const r=canv.getBoundingClientRect();
+    const m=Math.round(((ev.clientX-r.left-PL)/(r.width-PL-PR))*pr);
+    if(m<0||m>pr)return;
+    const rows=series.filter(s=>s.data&&s.data[m]!=null).map(s=>`<div class="dr"><span style="color:${s.color}">${s.label}</span><span>${yFmt(s.data[m])}</span></div>`).join('');
+    tip.innerHTML=`<div class="dt">${xFmt(m)}</div>${rows}`;
+    tip.style.opacity=1;
+    const px=(m/pr)*(canv.offsetWidth-PL-PR)+PL;
+    tip.style.left=Math.min(px+12,canv.offsetWidth-180)+'px';tip.style.top='4px';
+  };
+  canv.onmousemove=onMove;canv.onmouseleave=()=>tip.style.opacity=0;
+}
+
+function _drawCascata(D){
+  const ctx=_mkCtx('dc_casc');if(!ctx)return;
+  const {cx,w,h}=ctx;
+  const PL=60,PR=100,PT=20,PB=32;
+  const money2=v=>'R$'+Math.round(v).toLocaleString('pt-BR');
+  let arr;
+  const t=_cascTab;
+  if(t==='fin'&&!D.finViavel){cx.clearRect(0,0,w,h);cx.fillStyle='#9CA3AF';cx.font='12px Inter,sans-serif';cx.textAlign='center';cx.fillText('Informe um recurso próprio para simular',w/2,h/2);const _f=document.getElementById('dc_casc_foot');if(_f)_f.innerHTML='';return;}
+  if(t==='tes'&&D.isReverse)arr=[
+    {l:'Recurso próprio',v:D.totInv,type:'base',c:'var(--succ)'},
+    {l:'Rendimento',v:D.fvTes-D.totInv,type:'up',c:'var(--succ)'},
+  ];
+  else if(t==='tes'&&D.tesTot!=null)arr=[
+    {l:'Imóvel corrigido',v:D.iCorrMtes,type:'base',c:'#5a5a6a'},
+    {l:'Rendimento',v:-D.rTes,type:'down',c:'var(--succ)',noSign:true},
+  ];
+  else if(t==='fin')arr=[
+    {l:'Valor do imóvel',v:D.val,type:'base',c:'#C9A84C'},
+    {l:'Juros totais',v:D.jurosFin,type:'up',c:'var(--err)'},
+  ];
+  else if(t==='con')arr=[
+    {l:'Lance próprio',v:(D.numCartas||1)*D.cons.lanceProprio,type:'base',c:'#6ba7e8'},
+    {l:'Parcelas',v:(D.numCartas||1)*D.cons.totalPago,type:'up',c:'#6ba7e8'},
+  ];
+  if(!arr){cx.clearRect(0,0,w,h);cx.fillStyle='#9CA3AF';cx.font='12px Inter,sans-serif';cx.textAlign='center';cx.fillText('Configure um valor de imóvel para visualizar',w/2,h/2);return;}
+  let total=0;arr.forEach(s=>total+=s.v);
+  const totalLabel=(t==='tes'&&D.isReverse)?'Patrimônio':'Custo total';
+  const barsArr=[...arr,{l:totalLabel,v:total,type:'total',c:t==='tes'?'var(--succ)':'#5a5a6a'}];
+  const allTops=[];let cum2=0;
+  arr.forEach(s=>{if(s.type==='base'){cum2=s.v;}else if(s.type==='up'){cum2+=s.v;}else{cum2+=s.v;}allTops.push(cum2);});
+  const maxV=Math.max(total,Math.max(...allTops))*1.08||1;
+  const nb=barsArr.length,gap=(w-PL-PR)/nb,bw=gap*0.55,bx=i=>PL+gap*i+(gap-bw)/2;
+  const yp=v=>PT+(h-PT-PB)*(1-Math.max(0,v)/maxV);
+  cx.clearRect(0,0,w,h);
+  // grid
+  for(let i=0;i<=3;i++){
+    const v=maxV*i/3,yy=yp(v);
+    cx.beginPath();cx.moveTo(PL,yy);cx.lineTo(w-PR,yy);cx.strokeStyle='rgba(46,48,68,.6)';cx.lineWidth=1;cx.setLineDash([3,5]);cx.stroke();cx.setLineDash([]);
+    cx.fillStyle='#9CA3AF';cx.font='10px Inter,sans-serif';cx.textAlign='right';cx.fillText(money2(v),PL-4,yy+4);
+  }
+  let cum3=0,prevTop=null;
+  barsArr.forEach((s,i)=>{
+    const x0=bx(i);let yTop,yBot;
+    if(s.type==='total'){yBot=yp(0);yTop=yp(total);cum3=total;}
+    else if(s.type==='base'){yBot=yp(0);yTop=yp(s.v);cum3=s.v;}
+    else if(s.type==='up'){yBot=yp(cum3);cum3+=s.v;yTop=yp(cum3);}
+    else{yTop=yp(cum3);cum3+=s.v;yBot=yp(cum3);}
+    const ht=Math.abs(yBot-yTop),yy=Math.min(yTop,yBot);
+    // connector
+    if(prevTop!==null&&s.type!=='total'){
+      cx.beginPath();cx.moveTo(bx(i-1)+bw,prevTop);cx.lineTo(x0,s.type==='down'?yTop:yBot);
+      cx.strokeStyle='rgba(156,163,175,.3)';cx.lineWidth=1;cx.setLineDash([2,3]);cx.stroke();cx.setLineDash([]);
+    }
+    // resolve CSS var for canvas
+    const tmp=document.createElement('div');tmp.style.color=s.c;document.body.appendChild(tmp);
+    const resolvedC=getComputedStyle(tmp).color||s.c;document.body.removeChild(tmp);
+    cx.fillStyle=resolvedC;
+    cx.beginPath();cx.roundRect(x0,yy,bw,Math.max(ht,2),4);cx.fill();
+    // value label
+    cx.fillStyle=resolvedC;cx.font='bold 11px Inter,sans-serif';cx.textAlign='center';
+    const sign=s.noSign?'':s.type==='down'?'−':s.type==='up'?'+':'';
+    cx.fillText(sign+money2(Math.abs(s.v)),x0+bw/2,Math.min(yTop,yBot)-6);
+    // x label
+    cx.fillStyle='#9CA3AF';cx.font='10px Inter,sans-serif';
+    cx.fillText(s.l,x0+bw/2,h-PB+18);
+    prevTop=yp(cum3);
+  });
+  // footer text
+  const foot=document.getElementById('dc_casc_foot');
+  if(foot){
+    if(t==='tes')foot.innerHTML='';
+    if(t==='fin')foot.innerHTML=`Os <b>juros são o preço de morar hoje</b>: somam ${((D.jurosFin/D.val)*100).toFixed(0)}% por cima do valor do imóvel (${D.sisLabel}).`;
+    if(t==='con')foot.innerHTML='';
+  }
+}
+
+function _drawImCharts(){
+  const D=window.__imCharts;if(!D)return;
+  const xFmt=m=>m===0?'hoje':(m>=12?(m/12).toFixed(0)+'a':m+'m');
+  const yFmt=v=>'R$'+(v>=1e6?(v/1e6).toFixed(1)+'M':(v/1000).toFixed(0)+'k');
+  const yFmtK=v=>'R$'+(v/1000).toFixed(1)+'k';
+  // Chart 2: Imóvel valorizando
+  _drawLineChart('dc_tempo','dt_tempo',[
+    ...(!D.isReverse?[{label:'Imóvel (INCC)',data:D.refFull,color:'rgba(240,82,82,.8)',dash:[6,4],lw:2}]:[]),
+    {label:'Tesouro',data:(!D.isReverse&&D.crossT!=null)?D.tesAcumFull.slice(0,D.crossT+1):D.tesAcumFull,color:'#34C77B',keyAt:!D.isReverse?D.crossT:null},
+    ...(D.finViavel?[{label:'Financiamento',data:D.finAcumFull,color:'#C9A84C',keyAt:1}]:[]),
+    {label:'Consórcio',data:D.conAcumFull,color:'#6ba7e8',keyAt:D.contemp},
+  ],D.pr,xFmt,yFmt);
+  // Chart 3: Parcelas no tempo
+  _drawLineChart('dc_parc','dt_parc',[
+    {label:'Tesouro',data:(!D.isReverse&&D.crossT!=null)?D.parcTes.slice(0,D.crossT+1):D.parcTes,color:'#34C77B'},
+    ...(D.finViavel?[{label:'Financiamento',data:D.parcFin,color:'#C9A84C'}]:[]),
+    {label:'Consórcio',data:D.parcCons,color:'#6ba7e8',skipFirstInScale:true},
+  ],D.pr-1,xFmt,yFmtK,{autoMin:true});
+  // Chart SD: Saldo devedor
+  const sdvSeries=[];
+  if(D.finViavel&&D.sdSACbase)   sdvSeries.push({label:'SAC'+(D.cor!=='NENHUMA'?' +'+D.cor:''),   data:D.sdSACbase,  color:'#C9A84C'});
+  if(D.finViavel&&D.sdPRICEbase) sdvSeries.push({label:'PRICE'+(D.cor!=='NENHUMA'?' +'+D.cor:''), data:D.sdPRICEbase,color:'#e07b39'});
+  if(D.sdConsArr)   sdvSeries.push({label:'Consórcio',  data:D.sdConsArr,  color:'#6ba7e8'});
+  if(sdvSeries.length) _drawLineChart('dc_sdv','dt_sdv',sdvSeries,D.pr,xFmt,yFmt,{autoMin:true});
+  // Chart 4: Cascata
+  _drawCascata(D);
+}
+
+function calcJurosMensalParaAnual(){
+  const m = parseFloat(g('jr_mensal').value.replace(',','.'));
+  if(isNaN(m) || m < 0){ g('jr_anual_result').value = ''; return; }
+  const anual = (Math.pow(1 + m/100, 12) - 1) * 100;
+  g('jr_anual_result').value = anual.toFixed(4).replace('.',',');
+}
+
+function calcJurosAnualParaMensal(){
+  const a = parseFloat(g('jr_anual').value.replace(',','.'));
+  if(isNaN(a) || a < 0){ g('jr_mensal_result').value = ''; return; }
+  const mensal = (Math.pow(1 + a/100, 1/12) - 1) * 100;
+  g('jr_mensal_result').value = mensal.toFixed(4).replace('.',',');
+}
+
+// Init conversor — só roda se a página estiver visível
+function initJuros(){
+  if(g('jr_mensal')) calcJurosMensalParaAnual();
+  if(g('jr_anual')) calcJurosAnualParaMensal();
+}
+
+// ══════════════════════════
+// VEÍCULO
+// ══════════════════════════
+// Wrappers de compatibilidade — usam TABELAS_CONSORCIO.veiculo.
+function getVeiculoCreditos(tipo){
+  if(tipo === 'moto')   return TABELAS_CONSORCIO.veiculo.MB.cartas;
+  if(tipo === 'pesado') return TABELAS_CONSORCIO.veiculo.SP.cartas;
+  return TABELAS_CONSORCIO.veiculo.BA.cartas;  // BA e ASE têm as mesmas cartas
+}
+
+function arredondaCartaVeiculo(valor, tipo){
+  const lista = getVeiculoCreditos(tipo);
+  return lista.find(v=>v>=valor) || lista[lista.length-1];
+}
+
+function getVeiculoConfig(tipo, carta, prazo){
+  return getTabelaVeiculo(tipo, carta, prazo);
+}
+
+function updateVeiculoDefaults(){
+  const tipo=g('ve_tipo').value;
+  const prazo=g('ve_pr_global');
+  if(!prazo) return;
+  if(tipo==='moto') prazo.value='60';
+  if(tipo==='auto') prazo.value='60';
+  if(tipo==='pesado') prazo.value='70';
+  syncPrazoVeiculo();
+  updatePrazoVeiculo();
+}
+
+function syncPrazoVeiculo(){
+  const sel=g('ve_pr_global');
+  if(sel) g('ve_pr').value=sel.value;
+}
+
+// Atualiza select de prazo do veículo conforme tipo e MPM selecionado
+// Equivalente a updatePrazosGlobais() do imóvel.
+function updatePrazoVeiculo(){
+  const sel = g('ve_pr_global');
+  if(!sel) return;
+  const tipo = g('ve_tipo') ? g('ve_tipo').value : 'auto';
+  const mpmEl = g('ve_mpm_r');
+  const mpm = window.mpmGlobalVeiculo !== undefined ? window.mpmGlobalVeiculo : (mpmEl ? parseFloat(mpmEl.value)||0 : 0);
+
+  // Prazos vêm das TABELAS_CONSORCIO. Para auto, juntamos BA e ASE.
+  const tv = TABELAS_CONSORCIO.veiculo;
+  let prazos;
+  if(tipo === 'moto')        prazos = tv.MB.prazos.convencional;
+  else if(tipo === 'pesado') prazos = tv.SP.prazos.convencional;
+  else                       prazos = [...tv.BA.prazos.convencional, ...tv.ASE.prazos.convencional];
+
+  const prazoAtual = parseInt(sel.value) || parseInt(g('ve_pr').value) || 60;
+  // Regra BA: MPM > 0 com prazo > 60 (e < 90, ou seja, ainda BA) → cai pra 60.
+  let prazoFinal = prazoAtual;
+  if(tipo === 'auto' && mpm > 0 && prazoAtual > 60 && prazoAtual < 90) prazoFinal = 60;
+
+  sel.innerHTML = prazos.map(p => {
+    let aviso = '';
+    if(tipo === 'auto' && mpm > 0 && p > 60 && p < 90) aviso = ' • ajusta para 60 no MPM';
+    return `<option value="${p}" ${p===prazoFinal?'selected':''}>${p} meses — ${N(p/12,1)} anos${aviso}</option>`;
+  }).join('');
+
+  g('ve_pr').value = String(prazoFinal);
+}
+
+function syncCorrecaoVeiculo(){
+  const sel=g('ve_cor_global');
+  const cor=g('ve_cor');
+  if(cor) cor.value = sel && sel.value==='IPCA' ? 'IPCA' : 'NENHUMA';
+}
+
+function calcConsorcioVeiculo(tipo, valorBem, prazo, mpmPct, lanceProprioVal, contemp, ipcaAnual, aplicarCorrecao, lanceEmbPct=0.25){
+  const cartaMin = lanceEmbPct>0 ? valorBem/(1-lanceEmbPct) : valorBem;
+  const carta = arredondaCartaVeiculo(cartaMin, tipo);
+  const cfg = getVeiculoConfig(tipo, carta, prazo);
+  if(!cfg.mpm.includes(mpmPct)) mpmPct = 0;
+  // BA/SM: MPM só disponível até prazo 60
+  if(cfg.mpmMaxPrazo && mpmPct>0 && prazo>cfg.mpmMaxPrazo) prazo = cfg.mpmMaxPrazo;
+
+  const lanceEmbutido = carta * lanceEmbPct;
+  const lanceProprio = lanceProprioVal || 0;
+  const lanceTotal = lanceEmbutido + lanceProprio;
+  const creditoLiquido = carta - lanceEmbutido;
+  const valorTaxaAdm = carta * cfg.taxaAdm;
+  const valorFundo = carta * cfg.fundo;
+  const valorAntecipada = carta * cfg.antecipada;
+  // Saldo inicial inclui antecipada (ASE: 2% da carta entra no saldo)
+  const baseTotalPlano = carta + valorTaxaAdm + valorFundo + valorAntecipada;
+
+  // Parcela pré — fórmula exata do Excel:
+  // Convencional:  (carta + taxaAdm + fundo×carta) / prazo
+  // MPM 25%:       (0.75×carta + taxaAdm + fundo×0.75×carta) / prazo
+  // MPM 50%:       (0.50×carta + taxaAdm + fundo×0.50×carta) / prazo
+  // Nota: taxaAdm sempre sobre carta cheia, fundo sobre fração da carta
+  let fracaoCarta;
+  if(mpmPct===0.50 && cfg.mpm.includes(0.50)) fracaoCarta = 0.50;
+  else if(mpmPct===0.25) fracaoCarta = 0.75;
+  else fracaoCarta = 1.00;
+
+  const parcelaPre = (fracaoCarta * carta + valorTaxaAdm + cfg.fundo * fracaoCarta * carta) / prazo;
+
+  // Antecipada acrescida na 1ª parcela (ASE: 2% carta, SM: 1%+1%, BA: 0%)
+  const antecipada1 = cfg.tabela==='SM' ? carta*0.01 : valorAntecipada;
+  const antecipada2 = cfg.tabela==='SM' ? carta*0.01 : 0;
+
+  const p1 = parcelaPre + antecipada1;
+  const p2 = parcelaPre + antecipada2;
+
+  // Saldo devedor: inicia com baseTotalPlano (inclui antecipada)
+  // A antecipada é abatida junto com a 1ª parcela base
+  let saldoDevedor = baseTotalPlano;
+  for(let i=1; i<=contemp; i++){
+    const pAbate = i===1 ? parcelaPre + antecipada1 : i===2 ? parcelaPre + antecipada2 : parcelaPre;
+    saldoDevedor = Math.max(0, saldoDevedor - pAbate);
+  }
+  const saldoAntesLance = saldoDevedor;
+  const saldoPosContemp = Math.max(0, saldoAntesLance - lanceTotal);
+
+  // Amortização mínima = 1% do saldo inicial (baseTotalPlano) — só MPM
+  const amortMinima = baseTotalPlano * 0.01;
+  const prazoPosOriginal = Math.max(1, prazo - contemp);
+  let prazoPos, parcelaPos;
+
+  if(mpmPct === 0){
+    // Convencional: prazo fixo, sem redução
+    prazoPos = prazoPosOriginal;
+    parcelaPos = saldoPosContemp > 0 ? saldoPosContemp / prazoPos : 0;
+  } else {
+    const parcelaLinear = saldoPosContemp / prazoPosOriginal;
+    if(parcelaLinear >= amortMinima){
+      prazoPos = prazoPosOriginal;
+      parcelaPos = parcelaLinear;
+    } else {
+      // prazo reduz — usa ceil para cobrir o saldo exato
+      prazoPos = saldoPosContemp > 0 ? Math.floor(saldoPosContemp / amortMinima) : 0;
+      parcelaPos = prazoPos > 0 ? saldoPosContemp / prazoPos : 0;
+    }
+  }
+
+  const prazoEfetivo = contemp + prazoPos;
+  const corrM = toM(ipcaAnual);
+  let saldoAtual = baseTotalPlano;
+  let rows = [];
+
+  for(let i=1; i<=prazoEfetivo; i++){
+    let pBase, fase, obs='';
+    if(i < contemp){
+      pBase = i===1 ? parcelaPre : parcelaPre;
+      saldoAtual = Math.max(0, saldoAtual - pBase);
+      fase = 'Pré';
+    } else if(i === contemp){
+      pBase = i===1 ? parcelaPre : parcelaPre;
+      saldoAtual = Math.max(0, saldoAtual - pBase - lanceTotal);
+      fase = 'Contempl.';
+      obs = `Contemplação · Lance ${R(lanceTotal)}`;
+    } else {
+      pBase = parcelaPos;
+      saldoAtual = Math.max(0, saldoAtual - pBase);
+      fase = 'Pós';
+    }
+    const fator = aplicarCorrecao ? Math.pow(1+corrM, i-1) : 1;
+    const pComAntecp = i===1 ? (pBase+antecipada1)*fator : i===2 ? (pBase+antecipada2)*fator : pBase*fator;
+    rows.push({mes:i, p:pComAntecp, pBase:i===1?pBase+antecipada1:i===2?pBase+antecipada2:pBase, sd:saldoAtual, fase, obs});
+  }
+
+  const totalPago = rows.reduce((s,r)=>s+r.p, 0);
+  const cetAnual = calcCETconsFluxo(totalPago, creditoLiquido, prazoEfetivo, lanceProprio);
+  return {carta, creditoLiquido, lanceEmbutido, lanceProprio, lanceTotal, p1, p2, parcelaPre, parcelaPos, totalPago, cfg, rows, cetAnual, prazoEfetivo, prazoPos};
+}
+
+function calcVeiculo(){
+  const ajustes=g('ve-ajustes-globais'); if(ajustes) ajustes.style.display='block';
+  syncPrazoVeiculo(); syncCorrecaoVeiculo();
+
+  const tipo=gv('ve_tipo')?g('ve_tipo').value:g('ve_tipo').value;
+  const val=gv('ve_val');
+  const ent=gv('ve_ent');
+  const ap=gv('ve_ap');
+  const pr=gv('ve_pr');
+  const rf=gv('ve_rf');
+  const ipca=gv('ve_ipca');
+  const rs=gv('ve_rs');
+  const sis=g('ve_sis').value;
+  const cor=g('ve_cor').value;
+  const correcaoVeiculo = cor==='IPCA';
+
+  const rfPre=gv('ve_rf_pre') || rf;
+  const cr=Math.max(0,val-ent);
+  const tM=sis==='PREFIXADA' ? toM(rfPre) : toM(rf);
+  const selicM=toM(rs);
+
+  // Lê MPM antes para determinar prazo efetivo
+  const mpmEl=g('ve_mpm_r');
+  const mpm = window.mpmGlobalVeiculo !== undefined ? window.mpmGlobalVeiculo : (mpmEl ? parseFloat(mpmEl.value)||0 : 0);
+  const lanceEmbEl=g('ve_lance_embutido_r');
+  const lanceEmbPct=lanceEmbEl?parseFloat(lanceEmbEl.value)||0:0.25;
+  const contEl=g('ve_contemp_r')||g('ve_contemp');
+  const lanceEl=g('ve_lance_r')||g('ve_lance_proprio');
+  const contemp=parseInt(contEl.value)||24;
+  const lanceP=lanceEl ? (lanceEl.type==='text'?gv('ve_lance_r'):parseFloat(lanceEl.value)||0) : 0;
+
+  // Ajusta prazo se MPM forçar (BA: MPM 25% máx 60m)
+  const cfgCons = getVeiculoConfig(tipo, val, pr);
+  let prEfetivo = pr;
+  const hintEl = g('ve-prazo-hint');
+  if(cfgCons.mpmMaxPrazo && mpm > 0 && pr > cfgCons.mpmMaxPrazo){
+    prEfetivo = cfgCons.mpmMaxPrazo;
+    const prGlobal = g('ve_pr_global');
+    if(prGlobal){ prGlobal.value = String(prEfetivo); g('ve_pr').value = String(prEfetivo); }
+    if(hintEl) hintEl.innerHTML = 'Mesmo prazo aplicado aos 3 caminhos. <b style="color:var(--gold)">⚠ Prazo ajustado para ' + prEfetivo + 'm — MPM 25% não é permitido acima de 60 meses na tabela BA.</b>';
+  } else {
+    if(hintEl) hintEl.textContent = 'Mesmo prazo aplicado aos 3 caminhos.';
+  }
+
+  // Financiamento e Tesouro usam prEfetivo
+  const rows=getFinRows(cr,sis,cor,tM,prEfetivo,0,ipca);
+  const totFin=ent+rows.reduce((s,r)=>s+r.p,0);
+  const cetFin=calcCET(rows,cr);
+  const fvTes=fv(ent,ap,selicM,prEfetivo);
+  const totInv=ent+ap*prEfetivo;
+  const rendMes=fvTes*selicM;
+  const mTes=mesesParaAtingir(val,ent,ap,selicM);
+
+  const cons=calcConsorcioVeiculo(tipo,val,prEfetivo,mpm,lanceP,contemp,ipca,correcaoVeiculo,lanceEmbPct);
+  const totCons=cons.totalPago+cons.lanceProprio;
+  const cetCons=cons.cetAnual;
+  const mn=Math.min(totFin,totCons);
+  const tipoLabel=tipo==='moto'?'Moto':tipo==='pesado'?'Pesados':'Automóvel';
+  const corLabel=cor==='IPCA'?`+IPCA ${N(ipca)}% a.a.`:'Sem correção';
+  const sisLabel=sis==='SAC'?'SAC':sis==='PRICE'?'PRICE':'Prefixada';
+  const cfgAtual=getVeiculoConfig(tipo,cons.carta,pr);
+
+  const el=g('res-veiculo');
+  el.innerHTML=`
+    <div class="srow">
+      <div class="chip" style="border-color:rgba(52,199,123,.3)">
+        <div class="chip-accent" style="background:var(--succ)"></div>
+        <div class="chip-name">Guardar no Tesouro</div>
+        <div class="chip-mod">Selic ${N(rs)}% a.a. · ${pr}m</div>
+        <div class="chip-row"><span class="lb">Entrada investida</span><span class="vl" style="color:var(--succ)">${R(ent)}</span></div>
+        <div class="chip-row"><span class="lb">Aporte mensal</span><span class="vl">${R(ap)}</span></div>
+        <div class="chip-row"><span class="lb">Total aplicado</span><span class="vl">${R(totInv)}</span></div>
+        <div class="chip-row"><span class="lb">Rendimento</span><span class="vl pos">${R(fvTes-totInv)}</span></div>
+        <div class="chip-total" style="color:var(--succ)">${R(fvTes)}</div>
+        <div style="font-size:10px;color:var(--ts);margin-top:6px">Rende <b style="color:var(--succ)">${R(rendMes)}/mês</b> no final<br>${mTes<600?`Junta o valor em <b style="color:var(--succ)">${mTes} meses (${N(mTes/12,1)} anos)</b>`:'Não acumula o valor no prazo'}</div>
+      </div>
+
+      <div class="chip">
+        <div class="chip-accent" style="background:var(--sec)"></div>
+        <div class="chip-name">Financiamento ${sisLabel}</div>
+        <div class="chip-mod">${tipoLabel} · ${corLabel} · ${pr}m</div>
+        <div class="f" style="margin-bottom:10px">
+          <label style="font-size:9px;color:var(--ts)">Sistema</label>
+          <select id="ve_sis_r" onchange="g('ve_sis').value=this.value;calcVeiculo()" style="background:#1e2030;border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--tp);font-size:12px;width:100%;outline:none;cursor:pointer;appearance:none">
+            <option value="PRICE" ${sis==='PRICE'?'selected':''}>PRICE — Parcela Constante</option>
+            <option value="SAC" ${sis==='SAC'?'selected':''}>SAC — Amortização Constante</option>
+            <option value="PREFIXADA" ${sis==='PREFIXADA'?'selected':''}>Prefixada — Sem correção</option>
+          </select>
+        </div>
+        <div class="chip-row"><span class="lb">Crédito</span><span class="vl">${R(cr)}</span></div>
+        <div class="chip-row"><span class="lb">1ª Parcela</span><span class="vl" style="color:var(--sec)">${R(rows[0].p)}</span></div>
+        <div class="chip-row"><span class="lb">Última Parcela</span><span class="vl">${R(rows[rows.length-1].p)}</span></div>
+        <div class="chip-row"><span class="lb">Total Juros</span><span class="vl neg">${R(totFin-ent-cr)}</span></div>
+        <div class="chip-total" style="color:var(--sec)">${R(totFin)}</div>
+        <div class="cet-badge" onclick="this.nextElementSibling.classList.toggle('open')">CET ${N(cetFin)}% a.a. <span style="font-size:10px">▾ ver detalhes</span></div>
+        <div class="cet-detail">Taxa editável com referência BCB. Valores sujeitos à análise de crédito, perfil e instituição financeira.</div>
+      </div>
+
+      <div class="chip">
+        <div class="chip-accent" style="background:var(--gold)"></div>
+        <div class="chip-name">Consórcio</div>
+        <div class="chip-mod">${cons.cfg.tabela} · ${tipoLabel} · ${pr}m</div>
+        <div class="f" style="margin-bottom:10px"><label style="font-size:9px;color:var(--ts)">Mais por Menos</label><select id="ve_mpm_r" onchange="window.mpmGlobalVeiculo=parseFloat(this.value)||0;updatePrazoVeiculo();calcVeiculo()" style="background:#1e2030;border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--tp);font-size:12px;width:100%;outline:none;cursor:pointer;appearance:none"><option value="0" ${mpm===0?'selected':''}>Sem redução</option>${cfgAtual.mpm.includes(0.25)?`<option value="0.25" ${mpm===0.25?'selected':''}>25% a menos até contemplação</option>`:''}${cfgAtual.mpm.includes(0.50)?`<option value="0.50" ${mpm===0.50?'selected':''}>50% a menos até contemplação</option>`:''}</select></div>
+        <div class="chip-row"><span class="lb">Carta de Crédito</span><span class="vl" style="color:var(--gold)">${R(cons.carta)}</span></div>
+        <div class="chip-row"><span class="lb">Crédito Líquido</span><span class="vl pos">${R(cons.creditoLiquido)}</span></div>
+        <div class="f" style="margin:10px 0"><label style="font-size:9px;color:var(--ts)">Lance Embutido</label><select id="ve_lance_embutido_r" onchange="calcVeiculo()" style="background:#1e2030;border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--tp);font-size:12px;width:100%;outline:none;cursor:pointer;appearance:none"><option value="0" ${lanceEmbPct===0?'selected':''}>Sem lance embutido</option><option value="0.25" ${lanceEmbPct===0.25?'selected':''}>25% do crédito</option></select><div class="chip-row" style="margin-top:8px;margin-bottom:0"><span class="lb">Valor do Lance</span><span class="vl">${R(cons.lanceEmbutido)}</span></div></div>
+        <div class="f"><label style="font-size:9px;color:var(--ts)">Lance Próprio (R$)</label><input type="text" id="ve_lance_r" value="${R(lanceP)}" onfocus="this.value=gv('ve_lance_r')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="if(this.value===''){this.value='0'};maskCurrency(this);g('ve_lance_proprio').value=gv('ve_lance_r');calcVeiculo()" style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--tp);font-size:12px;width:100%;outline:none"></div>
+        <div class="f" style="margin-top:10px"><label style="font-size:9px;color:var(--ts)">Meses até a Contemplação</label><input type="text" inputmode="numeric" id="ve_contemp_r" value="${contemp}" min="3" max="100" onchange="g('ve_contemp').value=this.value;calcVeiculo()" style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--tp);font-size:12px;width:100%;outline:none" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="syncContempVeiculo ? syncContempVeiculo() : null;calcVeiculo()"></div>
+        <div class="chip-row" style="margin-top:12px"><span class="lb">1ª Parcela</span><span class="vl" style="color:var(--gold)">${R(cons.p1)}</span></div>
+        <div class="chip-row"><span class="lb">Demais Parcelas</span><span class="vl" style="color:var(--gold)">${R(cons.parcelaPre)}</span></div>
+        <div class="chip-row"><span class="lb">Parcela Pós Contemplação</span><span class="vl">${R(cons.parcelaPos)}</span></div>
+        <div class="chip-row"><span class="lb">Lance Total</span><span class="vl">${R(cons.lanceTotal)}</span></div>
+        <div class="chip-row"><span class="lb">Prazo Total</span><span class="vl">${cons.prazoEfetivo} meses</span></div>
+        <div class="chip-total" style="color:var(--gold)">${R(totCons)}</div>
+        <div class="cet-badge" onclick="this.nextElementSibling.classList.toggle('open')">Custo financeiro estimado: ${N(cetCons)}% a.a. <span style="font-size:10px">▾ ver detalhes</span></div>
+        <div class="cet-detail"><b>Como é calculado:</b> (total pago − crédito recebido) ÷ crédito ÷ prazo em anos.<br>Total pago: ${R(cons.totalPago)} · Crédito líquido: ${R(cons.creditoLiquido)} · Custo: ${R(cons.totalPago - cons.creditoLiquido)}<br>${cons.cfg.tabela}: adm. ${(cons.cfg.taxaAdm*100).toFixed(0)}% + fundo ${(cons.cfg.fundo*100).toFixed(0)}% + antecipada ${(cons.cfg.antecipada*100).toFixed(0)}%.<br>Correção: IPCA ${correcaoVeiculo?`(${N(ipca)}% a.a. aplicado)`:'(não aplicada)'}. Lance próprio: ${R(cons.lanceProprio)}.</div>
+      </div>
+    </div>
+
+    <div class="tabs"><button class="tab active" onclick="swTab(this,'ve-tab-tes')">Tesouro</button><button class="tab" onclick="swTab(this,'ve-tab-fin')">Financiamento</button><button class="tab" onclick="swTab(this,'ve-tab-cons')">Consórcio</button></div>
+    <div id="ve-tab-fin" class="tp"><div class="tw"><table><thead><tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amortização</th><th>Saldo</th></tr></thead><tbody>${buildShow(rows,pr).map(o=>o.e?'<tr class="ellr" onclick="expandTable(this)"><td colspan="5">•••</td></tr>':`<tr${o.h?' class="exp-row" style="display:none"':''}><td>${o.r.mes}</td><td class="hi">${R(o.r.p)}</td><td class="neg">${R(o.r.j)}</td><td class="pos">${R(o.r.am)}</td><td>${R(o.r.sd)}</td></tr>`).join('')}</tbody></table></div></div>
+    <div id="ve-tab-cons" class="tp"><div class="tw"><table><thead><tr><th>Mês</th><th>Fase</th><th>Parcela</th><th>Saldo</th><th>Obs.</th></tr></thead><tbody>${buildShow(cons.rows,cons.rows.length).map(o=>o.e?'<tr class="ellr" onclick="expandTable(this)"><td colspan="5">•••</td></tr>':`<tr${o.h?' class="exp-row" style="display:none"':''}><td>${o.r.mes}</td><td>${o.r.fase}</td><td class="hi">${R(o.r.p)}</td><td>${R(o.r.sd)}</td><td>${o.r.obs||''}</td></tr>`).join('')}</tbody></table></div></div>
+    <div id="ve-tab-tes" class="tp active"><div class="tes-monthly"><div><span class="tm-label">Rendimento mensal estimado no fim do período</span></div><div class="tm-val">${R(rendMes)}</div></div><div class="sg sg4"><div class="st"><div class="sl">Entrada</div><div class="sv">${R(ent)}</div></div><div class="st"><div class="sl">Aporte Mensal</div><div class="sv">${R(ap)}</div></div><div class="st"><div class="sl">Total Aplicado</div><div class="sv">${R(totInv)}</div></div><div class="st"><div class="sl">Rendimento</div><div class="sv pos">${R(fvTes-totInv)}</div></div></div></div>
+  `;
+  showR('res-veiculo');
+}
+
+// ══════════════════════════
+// HOME EQUITY
+// ══════════════════════════
+function calcHE(){
+  const ajustes = g('he-ajustes');
+  if(ajustes) ajustes.style.display='block';
+
+  const val = gv('he_val');
+  const ltvPct = Math.min(60, Math.max(0, parseFloat(g('he_ltv').value)||60));
+  g('he_ltv').value = ltvPct;
+
+  const credito = val * (ltvPct/100);
+  const iof = calcIOFEstimado(credito);
+  const valorFinanciado = credito + iof;
+
+  const pr = gv('he_pr');
+  const ipca = gv('he_ipca');
+  const corGlobal = g('he_cor').value;
+
+  const taxaBase = gv('he_rf');
+  const taxaPrefixada = gv('he_rf_pre');
+
+  const sistemas = [
+    { key:'PRICE', label:'PRICE', taxa:taxaBase, cor:corGlobal },
+    { key:'SAC', label:'SAC', taxa:taxaBase, cor:corGlobal },
+    { key:'PREFIXADA', label:'Prefixada', taxa:taxaPrefixada, cor:'NENHUMA' }
+  ];
+
+  const cards = sistemas.map(cfg=>{
+    const tM = toM(cfg.taxa);
+    const rows = getFinRows(valorFinanciado, cfg.key, cfg.cor, tM, pr, 0, ipca);
+    const total = rows.reduce((s,r)=>s+r.p,0);
+    const cet = calcCET(rows, credito);
+    const corLabel = cfg.cor==='IPCA' ? `+IPCA ${N(ipca)}% a.a.` : 'Sem correção';
+
+    return `
+      <div class="chip">
+        <div class="chip-accent" style="background:var(--sec)"></div>
+        <div class="chip-name">${cfg.label}</div>
+        <div class="chip-mod">${corLabel} · ${pr}m · LTV ${N(ltvPct,0)}%</div>
+
+        <div class="chip-row"><span class="lb">Taxa</span><span class="vl">${N(cfg.taxa)}% a.a.</span></div>
+        <div class="chip-row"><span class="lb">Crédito Liberado</span><span class="vl pos">${R(credito)}</span></div>
+        <div class="chip-row"><span class="lb">IOF Estimado</span><span class="vl">${R(iof)}</span></div>
+        <div class="chip-row"><span class="lb">Valor Financiado</span><span class="vl">${R(valorFinanciado)}</span></div>
+        <div class="chip-row"><span class="lb">1ª Parcela</span><span class="vl">${R(rows[0].p)}</span></div>
+        <div class="chip-row"><span class="lb">Última Parcela</span><span class="vl">${R(rows[rows.length-1].p)}</span></div>
+        <div class="chip-row"><span class="lb">Total Pago</span><span class="vl">${R(total)}</span></div>
+
+        <div class="chip-total" style="color:var(--sec)">${R(total)}</div>
+
+        <div class="cet-badge" onclick="this.nextElementSibling.classList.toggle('open')">
+          CET ${N(cet)}% a.a. <span style="font-size:10px">▾ ver detalhes</span>
+        </div>
+
+        <div class="cet-detail">
+          ${cfg.label} com taxa de ${N(cfg.taxa)}% a.a. Considerando IOF estimado de 3,38% (${R(iof)}), seguro estimado de R$ 100/mês e taxa operacional estimada de R$ 25/mês.
+          ${cfg.cor==='IPCA'?` e correção por IPCA de ${N(ipca)}% a.a.`:''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const rowsPrice = getFinRows(valorFinanciado, 'PRICE', corGlobal, toM(taxaBase), pr, 0, ipca);
+  const rowsSac = getFinRows(valorFinanciado, 'SAC', corGlobal, toM(taxaBase), pr, 0, ipca);
+  const rowsPre = getFinRows(valorFinanciado, 'PREFIXADA', 'NENHUMA', toM(taxaPrefixada), pr, 0, ipca);
+
+  const el = g('res-he');
+  el.innerHTML = `
+    <div class="srow">
+      ${cards}
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="swTab(this,'he-tab-price')">PRICE</button>
+      <button class="tab" onclick="swTab(this,'he-tab-sac')">SAC</button>
+      <button class="tab" onclick="swTab(this,'he-tab-pre')">Prefixada</button>
+    </div>
+
+    <div id="he-tab-price" class="tp active">
+      <div class="tw"><table><thead><tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amortização</th><th>Saldo</th></tr></thead><tbody>
+      ${buildShow(rowsPrice,pr).map(o=>o.e?'<tr class="ellr" onclick="expandTable(this)"><td colspan="5">•••</td></tr>':`<tr${o.h?' class="exp-row" style="display:none"':''}><td>${o.r.mes}</td><td class="hi">${R(o.r.p)}</td><td class="neg">${R(o.r.j)}</td><td class="pos">${R(o.r.am)}</td><td>${R(o.r.sd)}</td></tr>`).join('')}
+      </tbody></table></div>
+    </div>
+
+    <div id="he-tab-sac" class="tp">
+      <div class="tw"><table><thead><tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amortização</th><th>Saldo</th></tr></thead><tbody>
+      ${buildShow(rowsSac,pr).map(o=>o.e?'<tr class="ellr" onclick="expandTable(this)"><td colspan="5">•••</td></tr>':`<tr${o.h?' class="exp-row" style="display:none"':''}><td>${o.r.mes}</td><td class="hi">${R(o.r.p)}</td><td class="neg">${R(o.r.j)}</td><td class="pos">${R(o.r.am)}</td><td>${R(o.r.sd)}</td></tr>`).join('')}
+      </tbody></table></div>
+    </div>
+
+    <div id="he-tab-pre" class="tp">
+      <div class="tw"><table><thead><tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amortização</th><th>Saldo</th></tr></thead><tbody>
+      ${buildShow(rowsPre,pr).map(o=>o.e?'<tr class="ellr" onclick="expandTable(this)"><td colspan="5">•••</td></tr>':`<tr${o.h?' class="exp-row" style="display:none"':''}><td>${o.r.mes}</td><td class="hi">${R(o.r.p)}</td><td class="neg">${R(o.r.j)}</td><td class="pos">${R(o.r.am)}</td><td>${R(o.r.sd)}</td></tr>`).join('')}
+      </tbody></table></div>
+    </div>
+  `;
+
+  showR('res-he');
+}
+
+// ══════════════════════════
+// AUTO EQUITY
+// ══════════════════════════
+function calcAE(){
+  const ajustes = g('ae-ajustes');
+  if(ajustes) ajustes.style.display='block';
+
+  const tipo = 'passeio';
+  const val = gv('ae_val');
+  const ltvPct = Math.min(80, Math.max(0, parseFloat(g('ae_ltv').value)||80));
+  g('ae_ltv').value = ltvPct;
+
+  const credito = val * (ltvPct/100);
+  const iof = calcIOFEstimado(credito);
+  const valorFinanciado = credito + iof;
+
+  const pr = gv('ae_pr');
+  const ipca = gv('ae_ipca');
+  const corGlobal = g('ae_cor').value;
+
+  const taxaBase = gv('ae_rf');
+  const taxaPrefixada = gv('ae_rf_pre');
+
+  const sistemas = [
+    { key:'PRICE', label:'PRICE', taxa:taxaBase, cor:corGlobal },
+    { key:'SAC', label:'SAC', taxa:taxaBase, cor:corGlobal },
+    { key:'PREFIXADA', label:'Prefixada', taxa:taxaPrefixada, cor:'NENHUMA' }
+  ];
+
+  const cards = sistemas.map(cfg=>{
+    const tM = toM(cfg.taxa);
+    const rows = getFinRows(valorFinanciado, cfg.key, cfg.cor, tM, pr, 0, ipca);
+    const total = rows.reduce((s,r)=>s+r.p,0);
+    const cet = calcCET(rows, credito);
+    const corLabel = cfg.cor==='IPCA' ? `+IPCA ${N(ipca)}% a.a.` : 'Sem correção';
+
+    return `
+      <div class="chip">
+        <div class="chip-accent" style="background:var(--sec)"></div>
+        <div class="chip-name">${cfg.label}</div>
+        <div class="chip-mod">${corLabel} · ${pr}m · LTV ${N(ltvPct,0)}%</div>
+
+        <div class="chip-row"><span class="lb">Tipo</span><span class="vl">Passeio/Utilitário</span></div>
+        <div class="chip-row"><span class="lb">Taxa</span><span class="vl">${N(cfg.taxa)}% a.a.</span></div>
+        <div class="chip-row"><span class="lb">Crédito Liberado</span><span class="vl pos">${R(credito)}</span></div>
+        <div class="chip-row"><span class="lb">IOF Estimado</span><span class="vl">${R(iof)}</span></div>
+        <div class="chip-row"><span class="lb">Valor Financiado</span><span class="vl">${R(valorFinanciado)}</span></div>
+        <div class="chip-row"><span class="lb">1ª Parcela</span><span class="vl">${R(rows[0].p)}</span></div>
+        <div class="chip-row"><span class="lb">Última Parcela</span><span class="vl">${R(rows[rows.length-1].p)}</span></div>
+        <div class="chip-row"><span class="lb">Total Pago</span><span class="vl">${R(total)}</span></div>
+
+        <div class="chip-total" style="color:var(--sec)">${R(total)}</div>
+
+        <div class="cet-badge" onclick="this.nextElementSibling.classList.toggle('open')">
+          CET ${N(cet)}% a.a. <span style="font-size:10px">▾ ver detalhes</span>
+        </div>
+
+        <div class="cet-detail">
+          ${cfg.label} com taxa de ${N(cfg.taxa)}% a.a. Considerando IOF estimado de 3,38% (${R(iof)}), seguro estimado de R$ 100/mês e taxa operacional estimada de R$ 25/mês.
+          ${cfg.cor==='IPCA'?` e correção por IPCA de ${N(ipca)}% a.a.`:''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const rowsPrice = getFinRows(valorFinanciado, 'PRICE', corGlobal, toM(taxaBase), pr, 0, ipca);
+  const rowsSac = getFinRows(valorFinanciado, 'SAC', corGlobal, toM(taxaBase), pr, 0, ipca);
+  const rowsPre = getFinRows(valorFinanciado, 'PREFIXADA', 'NENHUMA', toM(taxaPrefixada), pr, 0, ipca);
+
+  const el = g('res-ae');
+  el.innerHTML = `
+    <div class="srow">
+      ${cards}
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="swTab(this,'ae-tab-price')">PRICE</button>
+      <button class="tab" onclick="swTab(this,'ae-tab-sac')">SAC</button>
+      <button class="tab" onclick="swTab(this,'ae-tab-pre')">Prefixada</button>
+    </div>
+
+    <div id="ae-tab-price" class="tp active">
+      <div class="tw"><table><thead><tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amortização</th><th>Saldo</th></tr></thead><tbody>
+      ${buildShow(rowsPrice,pr).map(o=>o.e?'<tr class="ellr" onclick="expandTable(this)"><td colspan="5">•••</td></tr>':`<tr${o.h?' class="exp-row" style="display:none"':''}><td>${o.r.mes}</td><td class="hi">${R(o.r.p)}</td><td class="neg">${R(o.r.j)}</td><td class="pos">${R(o.r.am)}</td><td>${R(o.r.sd)}</td></tr>`).join('')}
+      </tbody></table></div>
+    </div>
+
+    <div id="ae-tab-sac" class="tp">
+      <div class="tw"><table><thead><tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amortização</th><th>Saldo</th></tr></thead><tbody>
+      ${buildShow(rowsSac,pr).map(o=>o.e?'<tr class="ellr" onclick="expandTable(this)"><td colspan="5">•••</td></tr>':`<tr${o.h?' class="exp-row" style="display:none"':''}><td>${o.r.mes}</td><td class="hi">${R(o.r.p)}</td><td class="neg">${R(o.r.j)}</td><td class="pos">${R(o.r.am)}</td><td>${R(o.r.sd)}</td></tr>`).join('')}
+      </tbody></table></div>
+    </div>
+
+    <div id="ae-tab-pre" class="tp">
+      <div class="tw"><table><thead><tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amortização</th><th>Saldo</th></tr></thead><tbody>
+      ${buildShow(rowsPre,pr).map(o=>o.e?'<tr class="ellr" onclick="expandTable(this)"><td colspan="5">•••</td></tr>':`<tr${o.h?' class="exp-row" style="display:none"':''}><td>${o.r.mes}</td><td class="hi">${R(o.r.p)}</td><td class="neg">${R(o.r.j)}</td><td class="pos">${R(o.r.am)}</td><td>${R(o.r.sd)}</td></tr>`).join('')}
+      </tbody></table></div>
+    </div>
+  `;
+
+  showR('res-ae');
+}
+
+// ══════════════════════════
+// QUITAÇÃO / AMORTIZAÇÃO
+// ══════════════════════════
+function rowsFinSemTaxas(saldo, sistema, taxaMensal, prazo, corrM=0){
+  if(corrM === 0){
+    if(sistema==='SAC') return calcSAC(saldo, taxaMensal, prazo, 0, 0, 0);
+    return calcPRICE(saldo, taxaMensal, prazo, 0, 0, 0);
+  }
+  const amortSAC = saldo / prazo;
+  let sd = saldo;
+  const rows = [];
+  for(let i=1; i<=prazo && sd>0.01; i++){
+    sd = sd * (1 + corrM);
+    const j = sd * taxaMensal;
+    let p, am;
+    if(sistema==='SAC'){
+      am = Math.min(sd / (prazo - i + 1), sd);
+      p = j + am;
+    } else {
+      const mr = prazo - i + 1;
+      p = mr > 0
+        ? sd * (taxaMensal * Math.pow(1+taxaMensal,mr)) / (Math.pow(1+taxaMensal,mr) - 1)
+        : sd + j;
+      am = Math.min(p - j, sd);
+    }
+    sd = Math.max(0, sd - am);
+    rows.push({mes:i, p, j, am, extra:0, sd});
+  }
+  return rows;
+}
+
+function deveAmortizar(mes, mesInicial, frequencia, recorrente){
+  if(mes < mesInicial) return false;
+  if(!recorrente) return mes === mesInicial;
+  return (mes - mesInicial) % frequencia === 0;
+}
+
+function simulaAmortizacaoPrazo(saldo, sistema, taxaMensal, prazo, valorAmort, mesAmort, frequencia=6, recorrente=false, corrM=0){
+  const original = rowsFinSemTaxas(saldo, sistema, taxaMensal, prazo, corrM);
+  const parcelaRef = original[0].p;
+  const amortRef = sistema==='SAC' ? saldo/prazo : null;
+  let sd = saldo;
+  let rows = [];
+
+  for(let i=1; i<=prazo && sd>0.01; i++){
+    sd = sd * (1 + corrM);
+    let j = sd * taxaMensal;
+    let p, am;
+
+    if(sistema==='SAC'){
+      const amRef = (corrM > 0 && original[i-1]) ? original[i-1].am : amortRef;
+      am = Math.min(amRef, sd);
+      p = j + am;
+    } else {
+      p = (corrM > 0 && original[i-1]) ? original[i-1].p : parcelaRef;
+      am = Math.min(p - j, sd);
+    }
+
+    sd = Math.max(0, sd - am);
+
+    let amortExtra = 0;
+    if(deveAmortizar(i, mesAmort, frequencia, recorrente)){
+      amortExtra = Math.min(valorAmort, sd);
+      sd = Math.max(0, sd - amortExtra);
+    }
+
+    rows.push({mes:i,p,j,am,extra:amortExtra,sd});
+  }
+
+  return rows;
+}
+
+function simulaAmortizacaoParcela(saldo, sistema, taxaMensal, prazo, valorAmort, mesAmort, frequencia=6, recorrente=false, corrM=0){
+  let sd = saldo;
+  let rows = [];
+  const amortOriginal = sistema==='SAC' ? saldo/prazo : null;
+  let pmtAtual = sistema==='PRICE'
+    ? saldo * (taxaMensal*Math.pow(1+taxaMensal,prazo))/(Math.pow(1+taxaMensal,prazo)-1)
+    : null;
+
+  for(let i=1; i<=prazo && sd>0.01; i++){
+    sd = sd * (1 + corrM);
+    const mesesRestantes = prazo - i + 1;
+    let j = sd * taxaMensal;
+    let p, am;
+
+    if(sistema==='SAC'){
+      const amSac = (corrM > 0 || i > mesAmort) ? sd/mesesRestantes : amortOriginal;
+      am = Math.min(amSac, sd);
+      p = j + am;
+    } else {
+      if((corrM > 0 || i > mesAmort) && mesesRestantes > 0){
+        pmtAtual = sd * (taxaMensal*Math.pow(1+taxaMensal,mesesRestantes))/(Math.pow(1+taxaMensal,mesesRestantes)-1);
+      }
+      p = pmtAtual;
+      am = Math.min(p - j, sd);
+    }
+
+    sd = Math.max(0, sd - am);
+
+    let amortExtra = 0;
+    if(deveAmortizar(i, mesAmort, frequencia, recorrente)){
+      amortExtra = Math.min(valorAmort, sd);
+      sd = Math.max(0, sd - amortExtra);
+    }
+
+    rows.push({mes:i,p,j,am,extra:amortExtra,sd});
+  }
+
+  return rows;
+}
+
+function somaCampo(rows, campo){ return rows.reduce((s,r)=>s+(r[campo]||0),0); }
+
+function tabelaQuitacao(rows){
+  return buildShow(rows, rows.length).map(o=>o.e
+    ? '<tr class="ellr" onclick="expandTable(this)"><td colspan="6">•••</td></tr>'
+    : `<tr${o.h?' class="exp-row" style="display:none"':''}><td>${o.r.mes}</td><td class="hi">${R(o.r.p)}</td><td class="neg">${R(o.r.j)}</td><td class="pos">${R(o.r.am)}</td><td class="pos">${o.r.extra?R(o.r.extra):'—'}</td><td>${R(o.r.sd)}</td></tr>`
+  ).join('');
+}
+
+function calcQuitacao(){
+  const saldo = gv('qt_saldo');
+  const prazo = Math.max(1, parseInt(g('qt_prazo').value)||240);
+  const sistema = g('qt_sistema').value;
+  const taxa = gv('qt_taxa');
+  const taxaM = toM(taxa);
+  const valorAmort = gv('qt_amort');
+  const mesAmort = Math.min(prazo, Math.max(1, parseInt(g('qt_mes').value)||1));
+  const tipoAmort = g('qt_tipo_amort').value;
+  const recorrente = tipoAmort === 'recorrente';
+  const frequencia = Math.max(1, parseInt(g('qt_freq').value)||6);
+  g('qt_mes').value = mesAmort;
+  g('qt_freq').value = frequencia;
+
+  const corrTipo = g('qt_cor_tipo') ? g('qt_cor_tipo').value : 'NENHUMA';
+  const corrAnual = (corrTipo !== 'NENHUMA' && g('qt_corr')) ? gv('qt_corr') : 0;
+  const corrM = corrAnual > 0 ? toM(corrAnual) : 0;
+
+  const original = rowsFinSemTaxas(saldo, sistema, taxaM, prazo, corrM);
+  const prazoRows = simulaAmortizacaoPrazo(saldo, sistema, taxaM, prazo, valorAmort, mesAmort, frequencia, recorrente, corrM);
+  const parcelaRows = simulaAmortizacaoParcela(saldo, sistema, taxaM, prazo, valorAmort, mesAmort, frequencia, recorrente, corrM);
+
+  const jurosOriginal = somaCampo(original,'j');
+  const jurosPrazo = somaCampo(prazoRows,'j');
+  const jurosParcela = somaCampo(parcelaRows,'j');
+  const totalOriginal = somaCampo(original,'p');
+  const totalExtraPrazo = somaCampo(prazoRows,'extra');
+  const totalExtraParcela = somaCampo(parcelaRows,'extra');
+  const totalPrazo = somaCampo(prazoRows,'p') + totalExtraPrazo;
+  const totalParcela = somaCampo(parcelaRows,'p') + totalExtraParcela;
+  const economiaPrazo = jurosOriginal - jurosPrazo;
+  const economiaParcela = jurosOriginal - jurosParcela;
+
+  // dados para os gráficos
+  function qtArr(rows, field) {
+    const arr = new Array(prazo).fill(null);
+    rows.forEach((r, i) => { if (i < prazo) arr[i] = r[field]; });
+    return arr;
+  }
+  function qtCum(rows, field) {
+    const arr = new Array(prazo).fill(null);
+    let acc = 0;
+    rows.forEach((r, i) => { if (i < prazo) { acc += r[field] || 0; arr[i] = acc; } });
+    return arr;
+  }
+  function qtCumTotal(rows) {
+    const arr = new Array(prazo).fill(null);
+    let acc = 0;
+    rows.forEach((r, i) => { if (i < prazo) { acc += (r.p || 0) + (r.extra || 0); arr[i] = acc; } });
+    return arr;
+  }
+  window.__qtCharts = {
+    pr: prazo,
+    sd:    [qtArr(original,'sd'),    qtArr(prazoRows,'sd'),    qtArr(parcelaRows,'sd')],
+    parc:  [qtArr(original,'p'),     qtArr(prazoRows,'p'),     qtArr(parcelaRows,'p')],
+    juros: [qtCum(original,'j'),     qtCum(prazoRows,'j'),     qtCum(parcelaRows,'j')],
+    tot:   [qtCumTotal(original),    qtCumTotal(prazoRows),    qtCumTotal(parcelaRows)],
+  };
+
+  const el = g('res-quitacao');
+  el.innerHTML = `
+    <div class="srow">
+      <div class="chip">
+        <div class="chip-accent" style="background:var(--ts)"></div>
+        <div class="chip-name">Sem Amortizar</div>
+        <div class="chip-mod">${sistema} · ${prazo}m · ${N(taxa)}% a.a.</div>
+        <div class="chip-row"><span class="lb">Parcela inicial</span><span class="vl">${R(original[0].p)}</span></div>
+        <div class="chip-row"><span class="lb">Última parcela</span><span class="vl">${R(original[original.length-1].p)}</span></div>
+        <div class="chip-row"><span class="lb">Juros a pagar</span><span class="vl neg">${R(jurosOriginal)}</span></div>
+        <div class="chip-row"><span class="lb">Prazo</span><span class="vl">${original.length} meses</span></div>
+        <div class="chip-total">${R(totalOriginal)}</div>
+      </div>
+
+      <div class="chip">
+        <div class="chip-accent" style="background:var(--succ)"></div>
+        <div class="chip-name">Amortizar Prazo</div>
+        <div class="chip-mod">${recorrente?`Amortiza ${R(valorAmort)} a cada ${frequencia} meses`:'Amortização única'} · quita antes</div>
+        <div class="chip-row"><span class="lb">Amortização total</span><span class="vl pos">${R(totalExtraPrazo)}</span></div>
+        <div class="chip-row"><span class="lb">Novo prazo</span><span class="vl">${prazoRows.length} meses</span></div>
+        <div class="chip-row"><span class="lb">Meses reduzidos</span><span class="vl pos">${Math.max(0,prazo-prazoRows.length)} meses</span></div>
+        <div class="chip-row"><span class="lb">Juros a pagar</span><span class="vl neg">${R(jurosPrazo)}</span></div>
+        <div class="chip-row"><span class="lb">Economia em juros</span><span class="vl pos">${R(economiaPrazo)}</span></div>
+        <div class="chip-total" style="color:var(--succ)">${R(totalPrazo)}</div>
+      </div>
+
+      <div class="chip">
+        <div class="chip-accent" style="background:var(--sec)"></div>
+        <div class="chip-name">Reduzir Parcela</div>
+        <div class="chip-mod">${recorrente?`Amortiza ${R(valorAmort)} a cada ${frequencia} meses`:'Amortização única'} · recalcula parcela</div>
+        <div class="chip-row"><span class="lb">Amortização total</span><span class="vl pos">${R(totalExtraParcela)}</span></div>
+        <div class="chip-row"><span class="lb">Prazo</span><span class="vl">${parcelaRows.length} meses</span></div>
+        <div class="chip-row"><span class="lb">Parcela após amort.</span><span class="vl">${R(parcelaRows[Math.min(mesAmort,parcelaRows.length-1)].p)}</span></div>
+        <div class="chip-row"><span class="lb">Juros a pagar</span><span class="vl neg">${R(jurosParcela)}</span></div>
+        <div class="chip-row"><span class="lb">Economia em juros</span><span class="vl pos">${R(economiaParcela)}</span></div>
+        <div class="chip-total" style="color:var(--sec)">${R(totalParcela)}</div>
+      </div>
+    </div>
+
+    <div class="charts-grid" style="margin-top:24px">
+      <div class="dash-card">
+        <div class="ct">Saldo Devedor</div>
+        <div class="dg-cbox" style="position:relative"><canvas id="qt_c_sdv" style="width:100%;height:200px;display:block"></canvas><div class="dg-tip" id="qt_t_sdv"></div></div>
+      </div>
+      <div class="dash-card">
+        <div class="ct">Parcela Mensal</div>
+        <div class="dg-cbox" style="position:relative"><canvas id="qt_c_parc" style="width:100%;height:200px;display:block"></canvas><div class="dg-tip" id="qt_t_parc"></div></div>
+      </div>
+    </div>
+
+    <div class="tabs" style="margin-top:32px">
+      <button class="tab active" onclick="swTab(this,'qt-tab-original')">Sem Amortizar</button>
+      <button class="tab" onclick="swTab(this,'qt-tab-prazo')">Amortizar Prazo</button>
+      <button class="tab" onclick="swTab(this,'qt-tab-parcela')">Reduzir Parcela</button>
+    </div>
+
+    <div id="qt-tab-prazo" class="tp">
+      <div class="tw"><table><thead><tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amortização</th><th>Extra</th><th>Saldo</th></tr></thead><tbody>${tabelaQuitacao(prazoRows)}</tbody></table><div class="tnote">Mostrando 6 primeiras e 6 últimas parcelas · clique em ••• para expandir</div></div>
+    </div>
+    <div id="qt-tab-parcela" class="tp">
+      <div class="tw"><table><thead><tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amortização</th><th>Extra</th><th>Saldo</th></tr></thead><tbody>${tabelaQuitacao(parcelaRows)}</tbody></table><div class="tnote">Mostrando 6 primeiras e 6 últimas parcelas · clique em ••• para expandir</div></div>
+    </div>
+    <div id="qt-tab-original" class="tp active">
+      <div class="tw"><table><thead><tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amortização</th><th>Extra</th><th>Saldo</th></tr></thead><tbody>${tabelaQuitacao(original.map(r=>({...r,extra:0})))}</tbody></table><div class="tnote">Mostrando 6 primeiras e 6 últimas parcelas · clique em ••• para expandir</div></div>
+    </div>
+  `;
+
+  showR('res-quitacao');
+  requestAnimationFrame(() => requestAnimationFrame(_drawQtCharts));
+}
+
+function qtCorrToggle() {
+  const tipo = g('qt_cor_tipo').value;
+  const box = g('qt_corr_box');
+  if(tipo === 'NENHUMA'){ box.style.display='none'; return; }
+  box.style.display='';
+  g('qt_corr_label').textContent = tipo + ' (a.a. %)';
+  if(tipo==='TR')   g('qt_corr').value='0,20';
+  if(tipo==='IPCA') g('qt_corr').value='4,50';
+  urm('qt_corr','qt_corr_m');
+}
+
+function _drawQtCharts() {
+  const D = window.__qtCharts;
+  if (!D) return;
+  const xFmt = m => m === 0 ? 'hoje' : (m >= 12 ? (m/12).toFixed(0)+'a' : m+'m');
+  const yFmt = v => 'R$' + (v >= 1e6 ? (v/1e6).toFixed(1)+'M' : (v/1000).toFixed(0)+'k');
+  const yFmtK = v => 'R$' + (v/1000).toFixed(1)+'k';
+  const C = ['#9CA3AF', '#34C77B', '#C9A84C'];
+  const L = ['Sem Amortizar', 'Amortizar Prazo', 'Reduzir Parcela'];
+  const series = arr => arr.map((d, i) => ({ label: L[i], color: C[i], data: d }));
+
+  _drawLineChart('qt_c_sdv',  'qt_t_sdv',  series(D.sd),   D.pr, xFmt, yFmt,  { autoMin: true });
+  _drawLineChart('qt_c_parc', 'qt_t_parc', series(D.parc), D.pr, xFmt, yFmtK, { autoMin: true });
+}
+
+
+// ══════════════════════════
+// CAPITAL DE GIRO
+// ══════════════════════════
+function calcCG(){
+  const ajustes = g('cg-ajustes');
+  if(ajustes) ajustes.style.display='block';
+
+  const credito = gv('cg_val');
+  const pr = Math.min(60, parseInt(g('cg_pr').value)||60);
+  const ipca = gv('cg_ipca');
+  const corGlobal = g('cg_cor').value;
+  const taxaBase = gv('cg_rf');
+  const taxaPrefixada = gv('cg_rf_pre');
+  const iof = calcIOFEstimado(credito);
+  const valorFinanciado = credito + iof;
+
+  const sistemas = [
+    { key:'PRICE', label:'PRICE', taxa:taxaBase, cor:corGlobal },
+    { key:'SAC',   label:'SAC',   taxa:taxaBase, cor:corGlobal },
+    { key:'PREFIXADA', label:'Prefixada', taxa:taxaPrefixada, cor:'NENHUMA' }
+  ];
+
+  const cards = sistemas.map(cfg=>{
+    const tM = toM(cfg.taxa);
+    const rows = getFinRows(valorFinanciado, cfg.key, cfg.cor, tM, pr, 0, ipca);
+    const total = rows.reduce((s,r)=>s+r.p,0);
+    const cet = calcCET(rows, credito);
+    const corLabel = cfg.cor==='IPCA' ? `+IPCA ${N(ipca)}% a.a.` : 'Sem correção';
+    return `
+      <div class="chip">
+        <div class="chip-accent" style="background:var(--sec)"></div>
+        <div class="chip-name">${cfg.label}</div>
+        <div class="chip-mod">${corLabel} · ${pr}m</div>
+        <div class="chip-row"><span class="lb">Taxa</span><span class="vl">${N(cfg.taxa)}% a.a.</span></div>
+        <div class="chip-row"><span class="lb">Crédito</span><span class="vl pos">${R(credito)}</span></div>
+        <div class="chip-row"><span class="lb">IOF Estimado</span><span class="vl">${R(iof)}</span></div>
+        <div class="chip-row"><span class="lb">Valor Financiado</span><span class="vl">${R(valorFinanciado)}</span></div>
+        <div class="chip-row"><span class="lb">1ª Parcela</span><span class="vl">${R(rows[0].p)}</span></div>
+        <div class="chip-row"><span class="lb">Última Parcela</span><span class="vl">${R(rows[rows.length-1].p)}</span></div>
+        <div class="chip-total" style="color:var(--sec)">${R(total)}</div>
+        <div class="cet-badge" onclick="this.nextElementSibling.classList.toggle('open')">
+          CET ${N(cet)}% a.a. <span style="font-size:10px">▾ ver detalhes</span>
+        </div>
+        <div class="cet-detail">
+          ${cfg.label} com taxa de ${N(cfg.taxa)}% a.a. IOF estimado de 3,38% (${R(iof)}).${cfg.cor==='IPCA'?` Correção por IPCA de ${N(ipca)}% a.a.`:''}
+        </div>
+      </div>`;
+  }).join('');
+
+  const rowsPrice = getFinRows(valorFinanciado,'PRICE',corGlobal,toM(taxaBase),pr,0,ipca);
+  const rowsSac   = getFinRows(valorFinanciado,'SAC',corGlobal,toM(taxaBase),pr,0,ipca);
+  const rowsPre   = getFinRows(valorFinanciado,'PREFIXADA','NENHUMA',toM(taxaPrefixada),pr,0,ipca);
+
+  const el = g('res-cg');
+  el.innerHTML = `
+    <div class="srow">${cards}</div>
+    <div class="tabs">
+      <button class="tab active" onclick="swTab(this,'cg-tab-price')">PRICE</button>
+      <button class="tab" onclick="swTab(this,'cg-tab-sac')">SAC</button>
+      <button class="tab" onclick="swTab(this,'cg-tab-pre')">Prefixada</button>
+    </div>
+    <div id="cg-tab-price" class="tp active">
+      <div class="tw"><table><thead><tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amortização</th><th>Saldo</th></tr></thead><tbody>
+      ${buildShow(rowsPrice,pr).map(o=>o.e?'<tr class="ellr" onclick="expandTable(this)"><td colspan="5">•••</td></tr>':`<tr${o.h?' class="exp-row" style="display:none"':''}><td>${o.r.mes}</td><td class="hi">${R(o.r.p)}</td><td class="neg">${R(o.r.j)}</td><td class="pos">${R(o.r.am)}</td><td>${R(o.r.sd)}</td></tr>`).join('')}
+      </tbody></table></div>
+    </div>
+    <div id="cg-tab-sac" class="tp">
+      <div class="tw"><table><thead><tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amortização</th><th>Saldo</th></tr></thead><tbody>
+      ${buildShow(rowsSac,pr).map(o=>o.e?'<tr class="ellr" onclick="expandTable(this)"><td colspan="5">•••</td></tr>':`<tr${o.h?' class="exp-row" style="display:none"':''}><td>${o.r.mes}</td><td class="hi">${R(o.r.p)}</td><td class="neg">${R(o.r.j)}</td><td class="pos">${R(o.r.am)}</td><td>${R(o.r.sd)}</td></tr>`).join('')}
+      </tbody></table></div>
+    </div>
+    <div id="cg-tab-pre" class="tp">
+      <div class="tw"><table><thead><tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amortização</th><th>Saldo</th></tr></thead><tbody>
+      ${buildShow(rowsPre,pr).map(o=>o.e?'<tr class="ellr" onclick="expandTable(this)"><td colspan="5">•••</td></tr>':`<tr${o.h?' class="exp-row" style="display:none"':''}><td>${o.r.mes}</td><td class="hi">${R(o.r.p)}</td><td class="neg">${R(o.r.j)}</td><td class="pos">${R(o.r.am)}</td><td>${R(o.r.sd)}</td></tr>`).join('')}
+      </tbody></table></div>
+    </div>
+  `;
+  showR('res-cg');
+}
+
+
+// ══════════════════════════
+// AUTO-LOAD BCB NA ABERTURA
+// ══════════════════════════
+async function initBCBRates(){
+  const fetches = [
+    // Selic
+    fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados/ultimos/1?formato=json')
+      .then(r=>r.json()).then(d=>{
+        const val = parseFloat(d[0].valor.replace(',','.'));
+        const fmt = val.toFixed(2).replace('.',',');
+        ['im_rs','ve_rs','al_rs','he_rs','cg_rs'].forEach(id=>{
+          const el=g(id); if(el) el.value=fmt;
+        });
+        ['im_rs','ve_rs','al_rs','he_rs','cg_rs'].forEach(id=>{
+          const mId=id+'_m'; if(g(id)&&g(mId)) urm(id,mId);
+        });
+        const vf=g('vf_selic'); if(vf) vf.value=fmt;
+      }).catch(()=>{}),
+    // IPCA
+    fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.13522/dados/ultimos/1?formato=json')
+      .then(r=>r.json()).then(d=>{
+        const val = parseFloat(d[0].valor.replace(',','.'));
+        const fmt = val.toFixed(2).replace('.',',');
+        ['im_ipca','ve_ipca','al_ipca','he_ipca','ae_ipca','cg_ipca'].forEach(id=>{
+          const el=g(id); if(el) el.value=fmt;
+        });
+      }).catch(()=>{}),
+    // TR
+    fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.226/dados/ultimos/1?formato=json')
+      .then(r=>r.json()).then(d=>{
+        const trMensal = parseFloat(d[0].valor.replace(',','.'));
+        const trAnual  = (Math.pow(1+trMensal/100,12)-1)*100;
+        const fmt = trAnual.toFixed(2).replace('.',',');
+        ['im_tr','al_tr'].forEach(id=>{
+          const el=g(id); if(el) el.value=fmt;
+        });
+      }).catch(()=>{}),
+    // IGPM
+    fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.4175/dados/ultimos/1?formato=json')
+      .then(r=>r.json()).then(d=>{
+        const val = parseFloat(d[0].valor.replace(',','.'));
+        const el=g('al_igpm'); if(el) el.value=val.toFixed(2).replace('.',',');
+      }).catch(()=>{}),
+  ];
+  await Promise.allSettled(fetches);
+  // Recalcula a página inicial (Imóvel)
+  if(typeof calcImovel === 'function') calcImovel();
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  const params = new URLSearchParams(location.search);
+  if(params.get('embed')==='1'){
+    const nav=document.querySelector('nav.sidebar');
+    if(nav) nav.style.display='none';
+    const startPage = params.get('page') || 'imovel';
+    gp(startPage, document.querySelector('.ni.active'));
+    const section = params.get('section');
+    if(section){
+      const secEl = document.getElementById('vf_sec_' + section);
+      if(secEl && secEl.classList.contains('closed')) vfToggle('vf_sec_' + section);
+      if(section === 'im') setTimeout(calcVFImovel, 0);
+    }
+  }
+  imDetectMode();
+  calcImovel();
+  calcHE();
+  initBCBRates();
+});
+</script>
+</body>
+</html>
