@@ -1414,6 +1414,7 @@ async function sendLead(nome, email, telefone, origem) {
   }
   fetch(SHEETS_URL, {
     method: 'POST',
+    mode: 'no-cors',
     body: JSON.stringify({ nome, email, telefone, origem }),
   }).catch(err => console.error('Erro ao enviar lead:', err));
 }
