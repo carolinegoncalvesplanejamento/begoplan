@@ -252,7 +252,7 @@ body:not(.light-theme) .btn-cta{background:#fff; color:#000;}
 
 /* ===== FAQ ===== */
 .faq-list{display:flex; flex-direction:column; gap:4px;}
-.faq-item{border:1px solid var(--border); border-radius:4px; overflow:hidden;}
+.faq-item{border:1px solid var(--border); border-radius:4px; overflow:hidden; background:rgba(255,255,255,0.05);}
 .faq-item summary{
   list-style:none; display:flex; align-items:flex-start; gap:12px;
   padding:18px 20px; cursor:pointer; font-size:16px; font-weight:600; line-height:1.5;
@@ -261,11 +261,11 @@ body:not(.light-theme) .btn-cta{background:#fff; color:#000;}
 .faq-item summary::-webkit-details-marker{display:none;}
 .faq-item[open] summary{border-bottom:1px solid var(--border);}
 .faq-badges{display:flex; gap:6px; flex-wrap:wrap; flex-shrink:0; margin-top:2px;}
-.badge{font-size:11px; letter-spacing:0.5px; text-transform:uppercase; padding:3px 8px; border-radius:20px; font-weight:700;}
-.badge-mim{background:rgba(100,180,255,0.15); color:#6ab4ff;}
-.badge-empresa{background:rgba(255,200,100,0.15); color:#ffcc64;}
-.badge-fin{background:rgba(80,200,120,0.15); color:#50c878;}
-.badge-con{background:rgba(200,100,255,0.15); color:#c864ff;}
+.badge{font-size:11px; letter-spacing:0.5px; text-transform:uppercase; padding:3px 8px; border-radius:20px; font-weight:700; background:rgba(255,255,255,0.08);}
+.badge-mim{color:#b89ce0;}
+.badge-empresa{color:#8ea67d;}
+.badge-fin{color:#e0b978;}
+.badge-con{color:#7db8f0;}
 .faq-icon{margin-left:auto; flex-shrink:0; font-size:18px; color:var(--muted);}
 .faq-item[open] .faq-icon{transform:rotate(45deg);}
 .faq-body{padding:20px 20px; font-size:15px; color:#ccc; line-height:1.75;}
@@ -291,6 +291,7 @@ body:not(.light-theme) .btn-cta{background:#fff; color:#000;}
 /* ===== ESTUDO DE VIABILIDADE ===== */
 .qual-layout{display:grid; grid-template-columns:380px 1fr; gap:24px; align-items:start;}
 .qual-fields{display:flex; flex-direction:column; gap:8px; position:sticky; top:20px;}
+#qualDiag{max-width:640px;}
 .qual-item{
   background:var(--surface); border:1.5px solid var(--border); border-radius:6px; overflow:hidden;
   transition:border-color .15s, background .15s;
@@ -365,7 +366,8 @@ body:not(.light-theme) .btn-cta{background:#fff; color:#000;}
 .mcmv-info2 span{ font-size:13px; color:#555; }
 .mcmv-sub{ font-size:13px; color:#555; font-style:italic; }
 
-@media (max-width:700px){ .qual-layout{grid-template-columns:1fr;} .qual-fields{position:static;} .sysCard-grid2{grid-template-columns:1fr;} }
+@media (max-width:1400px){ .qual-layout{grid-template-columns:1fr;} .qual-fields{position:static;} #qualDiag{max-width:none;} }
+@media (max-width:700px){ .sysCard-grid2{grid-template-columns:1fr;} }
 
 
 /* ===== DOCUMENTAÇÃO (Próximos Passos — card 2) ===== */
