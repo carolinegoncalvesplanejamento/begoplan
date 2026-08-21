@@ -2396,13 +2396,15 @@ function calcImovel(){
   let prazoConsEfetivo = Math.min(prazoAjustado, 240); // consórcio: máximo 240 meses
 
   if (isReverse && ap > 0) {
-    // Modo reverso (com ou sem entrada): convencional sem redução, procura carta onde parcelaPre ≈ ap
-    mpmEfetivo = 0;
+    // Modo reverso (com ou sem entrada): procura carta onde a parcela pré-contemplação
+    // do plano escolhido (convencional ou Mais por Menos 25%/50%) ≈ ap
+    mpmEfetivo = mpm;
+    const redMpm = mpmEfetivo===0.50 ? 0.50 : mpmEfetivo===0.25 ? 0.75 : 1;
     let cartaEst = ap * prazoConsEfetivo / 0.75;
     for (let i = 0; i < 4; i++) {
       const cfgEst = getConsorcioConfig(cartaEst, prazoConsEfetivo);
       if (!cfgEst) break;
-      cartaEst = ap * prazoConsEfetivo / (1 + cfgEst.taxaAdm + cfgEst.fundo);
+      cartaEst = ap * prazoConsEfetivo / (redMpm * (1 + cfgEst.fundo) + cfgEst.taxaAdm);
     }
     consCred = cartaEst * (1 - lanceEmbPct);
   }
